@@ -15,53 +15,59 @@ public class AStarSystem : JobComponentSystem
     //[BurstCompile]
     private struct AStarJob : IJobParallelFor//IJobProcessComponentDataWithEntity<Agent, Target>
     {
-        [ReadOnly] public EntityCommandBuffer Commands;
+        [ReadOnly] public EntityCommandBuffer.Concurrent Commands;
         [ReadOnly] public ComponentDataFromEntity<Position> Positions;
         [ReadOnly] public ComponentDataFromEntity<Walkable> Walkables;
         [ReadOnly] private const int maxLength = 2500;
         [ReadOnly] private const int maxX = 50;
         public EntityArray NodeEntityArray;
+        [ReadOnly]
         public AgentGroup AgentGroup;
+        //public AgentGroup AgentGroup;
 
         public void Execute(int index)
         {
+            //Commands.RemoveComponent<Target>(index, AgentGroup.AgentEntity[index]);
             int2 start = GridGenerator.ClosestNode(AgentGroup.Position[index].Value);
             int2 goal = GridGenerator.ClosestNode(AgentGroup.Target[index].Value);
-            AStarSolver(start, goal);
+            int2 goal2 = new int2(39,8);
+            AStarSolver(start, goal2, index);
         }
         
 //        public void Execute(Entity agent, int index, ref Agent data, ref Target target)
 //        {
-//            //Commands.RemoveComponent<Target>(agent);
+//            //Commands.RemoveComponent<Target>(index, agent);
 //            int2 start = GridGenerator.ClosestNode(Positions[agent].Value);
 //            int2 goal = GridGenerator.ClosestNode(target.Value);
-//            AStarSolver(new int2(0,0), new int2(5,5));
+//            AStarSolver(start, new int2(17,8), 0);
 //        }
 
-        private void AStarSolver(int2 start, int2 goal)
+        private void AStarSolver(int2 start, int2 goal, int index)
         {
 //            Stopwatch sw = new Stopwatch();
 //            Stopwatch sw2 = new Stopwatch();
 //        
-//            int c = 0;
+            int c = 0;
+            int d = index;
 //            sw.Start();
             var openSet = new NativeMinHeap(maxLength, Allocator.TempJob);
             var closedSet = new NativeArray<MinHeapNode>(maxLength, Allocator.TempJob);
             var G_Costs = new NativeArray<int>(maxLength, Allocator.TempJob);
             var neighbours = new NativeList<int2>(Allocator.TempJob);
-            
-            var startNode = new MinHeapNode(GridGenerator.grid[start.x,start.y], start.x, start.y);
+
+            var startNode = new MinHeapNode(GridGenerator.grid[start.x,start.y], start);
+                        
             openSet.Push(startNode);
         
             while (openSet.HasNext())
             {
-                //c++;
+                c++;
                 var currentNode = openSet.Pop();
 
                 currentNode.IsClosed = 1;
                 closedSet[GetIndex(currentNode.Position)] = currentNode;
             
-                //em.SetSharedComponentData(currentNode.NodeEntity, closedLook);
+                //Commands.SetSharedComponent(index, currentNode.NodeEntity, Bootstrap.closedLook);
 
                 if (currentNode.Position.x == goal.x && currentNode.Position.y == goal.y)
                 {
@@ -71,11 +77,12 @@ public class AStarSystem : JobComponentSystem
                     var current = currentNode;
                     while(current.ParentPosition.x != -1)
                     {
-                        Commands.SetSharedComponent(current.NodeEntity, Bootstrap.pathLook);
+                        //Debug.Log("c: " + current.Position + " index: " + index);
+                        Commands.SetSharedComponent(index, current.NodeEntity, Bootstrap.pathLook);
                         current = closedSet[GetIndex(current.ParentPosition)];
                         //CreatePathStep(agent, i, path[i]);
                     }
-                    Commands.SetSharedComponent(current.NodeEntity, Bootstrap.pathLook);
+                    Commands.SetSharedComponent(index, current.NodeEntity, Bootstrap.pathLook);
                     break;
                 }
 
@@ -88,7 +95,7 @@ public class AStarSystem : JobComponentSystem
                 
                     int costSoFar = G_Costs[GetIndex(currentNode.Position)] + Heuristics.OctileDistance(currentNode.Position, neighbours[i]);
 
-                    //em.SetSharedComponentData(GridGenerator.grid[neighbours[i].x,neighbours[i].y], openLook);
+                    //Commands.SetSharedComponent(index, GridGenerator.grid[neighbours[i].x,neighbours[i].y], Bootstrap.openLook);
 
                     if (G_Costs[GetIndex(neighbours[i])] == 0 || costSoFar < G_Costs[GetIndex(neighbours[i])])
                     {
@@ -113,10 +120,10 @@ public class AStarSystem : JobComponentSystem
 
         private void CreatePathStep(Entity agent, int index, float3 stepPos)
         {
-            Commands.CreateEntity(Bootstrap._pathStepArchetype);
-            Commands.SetSharedComponent(new ParentAgent{Value = agent});
-            Commands.SetComponent(new PathIndex{Value = index});
-            Commands.SetComponent(new PathStep{Value = stepPos});
+//            Commands.CreateEntity(Bootstrap._pathStepArchetype);
+//            Commands.SetSharedComponent(new ParentAgent{Value = agent});
+//            Commands.SetComponent(new PathIndex{Value = index});
+//            Commands.SetComponent(new PathStep{Value = stepPos});
         }
 
         private void GetNeighbours(int2 coords, ref NativeList<int2> neighbours)
@@ -137,8 +144,8 @@ public class AStarSystem : JobComponentSystem
                         if(Walkables[checkNode].Value)
                         {
                             neighbours.Add(new int2(checkX,checkY));
-                        }                    
-                    }                    
+                        }
+                    }
                 }
             }            
         }
@@ -157,7 +164,7 @@ public class AStarSystem : JobComponentSystem
 //            NodeEntityArray = _gridGroup.NodeEntity,
 //            Positions = _position,
 //            Walkables = _walkable,
-//            Commands = _aStarBarrier.CreateCommandBuffer()
+//            Commands = _aStarBarrier.CreateCommandBuffer().ToConcurrent()
 //        }.Schedule(this, inputDeps);
 
         JobHandle jh = new AStarJob()
@@ -165,9 +172,9 @@ public class AStarSystem : JobComponentSystem
             NodeEntityArray = _gridGroup.NodeEntity,
             Positions = _position,
             Walkables = _walkable,
-            Commands = _aStarBarrier.CreateCommandBuffer(),
+            Commands = _aStarBarrier.CreateCommandBuffer().ToConcurrent(),
             AgentGroup = _agentGroup
-        }.Schedule(_agentGroup.Length, 2, inputDeps);
+        }.Schedule(_agentGroup.Length, 1, inputDeps);
         jh.Complete();
         return jh;
     }
@@ -191,7 +198,7 @@ public class AStarSystem : JobComponentSystem
         [ReadOnly] public ComponentDataArray<Position> Position;
         [ReadOnly] public ComponentDataArray<Agent> Agent;
         [ReadOnly] public ComponentDataArray<Target> Target;
-        [ReadOnly] public EntityArray NodeEntity;
+        [ReadOnly] public EntityArray AgentEntity;
         public readonly int Length;
     }
 

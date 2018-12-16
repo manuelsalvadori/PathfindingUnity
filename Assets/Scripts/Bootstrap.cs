@@ -10,6 +10,8 @@ public class Bootstrap
     public static MeshInstanceRenderer agentLook;
     public static MeshInstanceRenderer nodeLook;
     public static MeshInstanceRenderer pathLook;
+    public static MeshInstanceRenderer openLook;
+    public static MeshInstanceRenderer closedLook;
     public static MeshInstanceRenderer unwalkableLook;
 
     public static EntityArchetype _agentArchetype;
@@ -29,12 +31,14 @@ public class Bootstrap
         var entityManager = World.Active.GetOrCreateManager<EntityManager>();
         agentLook = GetLook("AgentLook");
         pathLook = GetLook("PathLook");
+        openLook = GetLook("openLook");
+        closedLook = GetLook("ClosedLook");
         SpawnAgents(entityManager);
     }
 
     private static void SpawnAgents(EntityManager entityManager)
     {
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < 25; i++)
         {
             var agent = entityManager.CreateEntity(_agentArchetype);
             entityManager.SetSharedComponentData(agent, agentLook);
