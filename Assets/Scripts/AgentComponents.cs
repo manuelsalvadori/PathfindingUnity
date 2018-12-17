@@ -8,24 +8,8 @@ public struct Target : IComponentData
     public float3 Value;
 }
 
-public struct Step : IComponentData
+[InternalBufferCapacity(25)]
+public struct Waypoints : IBufferElementData
 {
-    public int Value;
-}
-
-// path components
-
-public struct PathStep : IComponentData
-{
-    public float3 Value;
-}
-
-public struct PathIndex : IComponentData
-{
-    public int Value;
-}
-
-public struct ParentAgent : ISharedComponentData
-{
-    public Entity Value;
+    public int2 Value;
 }

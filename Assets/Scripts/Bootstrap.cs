@@ -16,7 +16,6 @@ public class Bootstrap
 
     public static EntityArchetype _agentArchetype;
     public static EntityArchetype _nodeArchetype;
-    public static EntityArchetype _pathStepArchetype;
     public static EntityArchetype _moveVelocityArchetype;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -38,21 +37,27 @@ public class Bootstrap
 
     private static void SpawnAgents(EntityManager entityManager)
     {
-        for (int i = 0; i < 25; i++)
-        {
-            var agent = entityManager.CreateEntity(_agentArchetype);
-            entityManager.SetSharedComponentData(agent, agentLook);
-            entityManager.SetComponentData(agent, new Position{Value = new float3(0,1,i*2)});
-            entityManager.SetComponentData(agent, new Target{Value = new float3(i + 5,1,i+5)});
-        }
+        var input = entityManager.CreateEntity();
+        entityManager.AddComponent(input, typeof(TargetInput));
+        //entityManager.SetComponentData(input, new TargetInput{Value = new int2(39,8)});
+        entityManager.SetComponentData(input, new TargetInput{Value = new int2(49,49)});
         
-        for (int i = 0; i < 100; i++)
-        {
-            var agent = entityManager.CreateEntity(_moveVelocityArchetype);
-            entityManager.SetSharedComponentData(agent, agentLook);
-            entityManager.SetComponentData(agent, new Position{Value = new float3(i+.5f,1,i+.5f)});
-            entityManager.SetComponentData(agent, new Velocity(){Value = 1.0f});
-        }
+//        for (int i = 0; i < 10; i++)
+//        {
+//            var agent = entityManager.CreateEntity(_agentArchetype);
+//            entityManager.SetSharedComponentData(agent, agentLook);
+//            entityManager.SetComponentData(agent, new Position{Value = new float3(-24.6f, 1, i*2-24.6f)});
+//            entityManager.SetComponentData(agent, new Target{Value = new float3(i + 5, 1, i+5)});
+//        }
+        
+        //    debug chunck iteration        
+//        for (int i = 0; i < 100; i++)
+//        {
+//            var agent = entityManager.CreateEntity(_moveVelocityArchetype);
+//            entityManager.SetSharedComponentData(agent, agentLook);
+//            entityManager.SetComponentData(agent, new Position{Value = new float3(i+.5f,1,i+.5f)});
+//            entityManager.SetComponentData(agent, new Velocity(){Value = 1.0f});
+//        }
     }
 
     private static void CreateArchetypes(EntityManager entityManager)
@@ -67,19 +72,14 @@ public class Bootstrap
             typeof(Position),
             typeof(MeshInstanceRenderer),
             typeof(Agent),
-            typeof(Target)
+            typeof(Target),
+            typeof(Waypoints)
         );
         
         _nodeArchetype = entityManager.CreateArchetype(
             typeof(Position),
             typeof(MeshInstanceRenderer),
             typeof(Node)           
-        );
-        
-        _pathStepArchetype = entityManager.CreateArchetype(
-            typeof(PathStep),
-            typeof(PathIndex),
-            typeof(ParentAgent)           
         );
     }
 

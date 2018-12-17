@@ -12,44 +12,30 @@ using Debug = UnityEngine.Debug;
 
 public class AStarSystem : JobComponentSystem
 {   
-    //[BurstCompile]
-    private struct AStarJob : IJobParallelFor//IJobProcessComponentDataWithEntity<Agent, Target>
+    private struct AStarJob : IJobParallelFor
     {
+        [ReadOnly] public ComponentDataArray<TargetInput> targetInput;
         [ReadOnly] public EntityCommandBuffer.Concurrent Commands;
-        [ReadOnly] public ComponentDataFromEntity<Position> Positions;
         [ReadOnly] public ComponentDataFromEntity<Walkable> Walkables;
         [ReadOnly] private const int maxLength = 2500;
         [ReadOnly] private const int maxX = 50;
-        public EntityArray NodeEntityArray;
-        [ReadOnly]
-        public AgentGroup AgentGroup;
-        //public AgentGroup AgentGroup;
-
+        [ReadOnly] public AgentGroup AgentGroup;
+        
+        [NativeDisableParallelForRestriction]
+        public BufferFromEntity<Waypoints> Waypoints;
         public void Execute(int index)
-        {
-            //Commands.RemoveComponent<Target>(index, AgentGroup.AgentEntity[index]);
+        {  
             int2 start = GridGenerator.ClosestNode(AgentGroup.Position[index].Value);
             int2 goal = GridGenerator.ClosestNode(AgentGroup.Target[index].Value);
-            int2 goal2 = new int2(39,8);
-            AStarSolver(start, goal2, index);
+            //int2 goal2 = targetInput[0].Value;
+            int2 goal2 = start +  new int2(49,0);
+            Commands.RemoveComponent<Target>(index, AgentGroup.AgentEntity[index]);
+            AStarSolver(start, goal2, index, AgentGroup.AgentEntity[index]);
         }
-        
-//        public void Execute(Entity agent, int index, ref Agent data, ref Target target)
-//        {
-//            //Commands.RemoveComponent<Target>(index, agent);
-//            int2 start = GridGenerator.ClosestNode(Positions[agent].Value);
-//            int2 goal = GridGenerator.ClosestNode(target.Value);
-//            AStarSolver(start, new int2(17,8), 0);
-//        }
 
-        private void AStarSolver(int2 start, int2 goal, int index)
+        private void AStarSolver(int2 start, int2 goal, int index, Entity agent)
         {
-//            Stopwatch sw = new Stopwatch();
-//            Stopwatch sw2 = new Stopwatch();
-//        
-            int c = 0;
-            int d = index;
-//            sw.Start();
+
             var openSet = new NativeMinHeap(maxLength, Allocator.TempJob);
             var closedSet = new NativeArray<MinHeapNode>(maxLength, Allocator.TempJob);
             var G_Costs = new NativeArray<int>(maxLength, Allocator.TempJob);
@@ -61,7 +47,6 @@ public class AStarSystem : JobComponentSystem
         
             while (openSet.HasNext())
             {
-                c++;
                 var currentNode = openSet.Pop();
 
                 currentNode.IsClosed = 1;
@@ -71,18 +56,19 @@ public class AStarSystem : JobComponentSystem
 
                 if (currentNode.Position.x == goal.x && currentNode.Position.y == goal.y)
                 {
-                    //Debug.Log("fine");
-//                    sw.Stop();
-//                    Debug.Log("Iterations: "+ c +"Time: " + sw.ElapsedMilliseconds + "ms");
+                    var path = new NativeList<int2>(Allocator.TempJob);
                     var current = currentNode;
                     while(current.ParentPosition.x != -1)
                     {
-                        //Debug.Log("c: " + current.Position + " index: " + index);
-                        Commands.SetSharedComponent(index, current.NodeEntity, Bootstrap.pathLook);
+                        path.Add(current.Position);
+                        //Commands.SetSharedComponent(index, current.NodeEntity, Bootstrap.pathLook);
                         current = closedSet[GetIndex(current.ParentPosition)];
-                        //CreatePathStep(agent, i, path[i]);
                     }
-                    Commands.SetSharedComponent(index, current.NodeEntity, Bootstrap.pathLook);
+                    path.Add(current.Position);
+                    //Commands.SetSharedComponent(index, current.NodeEntity, Bootstrap.pathLook);
+                    
+                    CreatePath(index, agent, ref path);
+                    path.Dispose();
                     break;
                 }
 
@@ -100,7 +86,6 @@ public class AStarSystem : JobComponentSystem
                     if (G_Costs[GetIndex(neighbours[i])] == 0 || costSoFar < G_Costs[GetIndex(neighbours[i])])
                     {
                         // update costs
-                    
                         int g = costSoFar;
                         int h = Heuristics.OctileDistance(neighbours[i], goal);
                         int f = g + h;
@@ -118,12 +103,30 @@ public class AStarSystem : JobComponentSystem
             neighbours.Dispose();
         }
 
-        private void CreatePathStep(Entity agent, int index, float3 stepPos)
+        private void CreatePath(int index, Entity agent, ref NativeList<int2> path)
         {
-//            Commands.CreateEntity(Bootstrap._pathStepArchetype);
-//            Commands.SetSharedComponent(new ParentAgent{Value = agent});
-//            Commands.SetComponent(new PathIndex{Value = index});
-//            Commands.SetComponent(new PathStep{Value = stepPos});
+            int2 dir;
+            int2 oldDir = new int2(0,0);
+            int pathIndex = 0;
+            
+            DynamicBuffer<int2> waypoints = Waypoints[agent].Reinterpret<int2>();
+            waypoints.Clear();
+            
+            for (int i = 1; i < path.Length; i++)
+            {
+                dir = path[i - 1] - path[i];
+                if (dir.x != oldDir.x || dir.y != oldDir.y)
+                {
+                    //DisplayPathStep(index, new float3(path[i-1].x, 1f, path[i-1].y));
+                    waypoints.Add(path[i - 1]);
+                    oldDir = dir;
+                }                
+            }
+        }
+
+        private void DisplayPathStep(int index, float3 stepPos)
+        {
+            Commands.SetSharedComponent(index, GridGenerator.grid[(int)stepPos.x,(int)stepPos.z], Bootstrap.openLook);
         }
 
         private void GetNeighbours(int2 coords, ref NativeList<int2> neighbours)
@@ -159,21 +162,13 @@ public class AStarSystem : JobComponentSystem
 
     protected override JobHandle OnUpdate(JobHandle inputDeps)
     {
-//        return new AStarJob()
-//        {
-//            NodeEntityArray = _gridGroup.NodeEntity,
-//            Positions = _position,
-//            Walkables = _walkable,
-//            Commands = _aStarBarrier.CreateCommandBuffer().ToConcurrent()
-//        }.Schedule(this, inputDeps);
-
         JobHandle jh = new AStarJob()
         {
-            NodeEntityArray = _gridGroup.NodeEntity,
-            Positions = _position,
             Walkables = _walkable,
             Commands = _aStarBarrier.CreateCommandBuffer().ToConcurrent(),
-            AgentGroup = _agentGroup
+            AgentGroup = _agentGroup,
+            Waypoints = GetBufferFromEntity<Waypoints>(),
+            targetInput = _targetGroup.target
         }.Schedule(_agentGroup.Length, 1, inputDeps);
         jh.Complete();
         return jh;
@@ -201,9 +196,16 @@ public class AStarSystem : JobComponentSystem
         [ReadOnly] public EntityArray AgentEntity;
         public readonly int Length;
     }
+    
+    //debug purpose
+    private struct TargetGroup
+    {
+        [ReadOnly] public ComponentDataArray<TargetInput> target;
+        public readonly int Length;
+    }
 
     [Inject] private GridGroup _gridGroup;
     [Inject] private AgentGroup _agentGroup;
-    [Inject] private ComponentDataFromEntity<Position> _position;
+    [Inject] private TargetGroup _targetGroup;
     [Inject] private ComponentDataFromEntity<Walkable> _walkable;
 }

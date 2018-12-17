@@ -16,6 +16,7 @@ public class GridGenerator : MonoBehaviour
     public static Entity[,] grid;
     public static int walkableNodesCount;
     private MeshInstanceRenderer unwalkableLook;
+    public static MeshInstanceRenderer nodeLook;
     public static bool go = false;
     private EntityManager entityManager;
 
@@ -35,7 +36,7 @@ public class GridGenerator : MonoBehaviour
         
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
         Entity node;
-        var nodeLook = Bootstrap.GetLook("NodeLook");
+        nodeLook = Bootstrap.GetLook("NodeLook");
         unwalkableLook = Bootstrap.GetLook("UnwalkableNodeLook");
         
         for (int x = 0; x < gridSize.x; x++)
@@ -68,16 +69,16 @@ public class GridGenerator : MonoBehaviour
 
     public static int2 ClosestNode(float3 pos)
     {
-        return new int2(math.clamp(Mathf.FloorToInt(pos.x), 0 , 49), math.clamp(Mathf.FloorToInt(pos.z), 0 , 49));
-        //return new int2(math.clamp(Mathf.FloorToInt(pos.x) + 25, 0 , 49), math.clamp(Mathf.FloorToInt(pos.z) + 25, 0 , 49));
+        //return new int2(math.clamp(Mathf.FloorToInt(pos.x), 0 , 49), math.clamp(Mathf.FloorToInt(pos.z), 0 , 49));
+        return new int2(math.clamp(Mathf.FloorToInt(pos.x) + 25, 0 , 49), math.clamp(Mathf.FloorToInt(pos.z) + 25, 0 , 49));
     }
 
-    private static float GridToWorldPosX(int coord)
+    public static float GridToWorldPosX(int coord)
     {
         return coord - (grid.GetLength(0) / 2f) + (ns / 2f);
     }
 
-    private static float GridToWorldPosY(int coord)
+    public static float GridToWorldPosY(int coord)
     {
         return coord - (grid.GetLength(1) / 2f) + (ns / 2f);
     }
