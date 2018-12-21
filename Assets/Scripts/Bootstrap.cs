@@ -14,9 +14,7 @@ public class Bootstrap
     public static MeshInstanceRenderer closedLook;
     public static MeshInstanceRenderer unwalkableLook;
 
-    public static EntityArchetype _agentArchetype;
     public static EntityArchetype _nodeArchetype;
-    public static EntityArchetype _moveVelocityArchetype;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     public static void Init()
@@ -37,12 +35,15 @@ public class Bootstrap
 
     private static void SpawnAgents(EntityManager entityManager)
     {
-        var input = entityManager.CreateEntity();
-        entityManager.AddComponent(input, typeof(TargetInput));
-        //entityManager.SetComponentData(input, new TargetInput{Value = new int2(39,8)});
-        entityManager.SetComponentData(input, new TargetInput{Value = new int2(49,49)});
+        var _agentArchetype = entityManager.CreateArchetype(
+            typeof(Position),
+            typeof(MeshInstanceRenderer),
+            typeof(Agent),
+            typeof(Target),
+            typeof(Waypoints)
+        );
         
-//        for (int i = 0; i < 10; i++)
+//        for (int i = 0; i < 1; i++)
 //        {
 //            var agent = entityManager.CreateEntity(_agentArchetype);
 //            entityManager.SetSharedComponentData(agent, agentLook);
@@ -50,7 +51,7 @@ public class Bootstrap
 //            entityManager.SetComponentData(agent, new Target{Value = new float3(i + 5, 1, i+5)});
 //        }
         
-        //    debug chunck iteration        
+//        // debug chunck iteration        
 //        for (int i = 0; i < 100; i++)
 //        {
 //            var agent = entityManager.CreateEntity(_moveVelocityArchetype);
@@ -62,20 +63,6 @@ public class Bootstrap
 
     private static void CreateArchetypes(EntityManager entityManager)
     {
-        _moveVelocityArchetype = entityManager.CreateArchetype(
-            typeof(Position),
-            typeof(MeshInstanceRenderer),
-            typeof(Velocity)
-        );
-        
-        _agentArchetype = entityManager.CreateArchetype(
-            typeof(Position),
-            typeof(MeshInstanceRenderer),
-            typeof(Agent),
-            typeof(Target),
-            typeof(Waypoints)
-        );
-        
         _nodeArchetype = entityManager.CreateArchetype(
             typeof(Position),
             typeof(MeshInstanceRenderer),

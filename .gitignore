@@ -32,6 +32,10 @@ sysinfo.txt
 
 /Assets/CodeSamples/*.*
 /*.meta
+*.cs.meta
+/*.cs.meta
+*.pidb.meta
+.idea
  
 # ============ #
 # OS generated #

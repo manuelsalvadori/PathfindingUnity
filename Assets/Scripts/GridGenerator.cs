@@ -9,30 +9,20 @@ using UnityEngine;
 
 public class GridGenerator : MonoBehaviour
 {
-    //public LayerMask Unwalkable;
     public int2 gridSize;
     public float nodeSize;
     private static float ns;
     public static Entity[,] grid;
-    public static int walkableNodesCount;
+    //public static int walkableNodesCount;
     private MeshInstanceRenderer unwalkableLook;
     public static MeshInstanceRenderer nodeLook;
-    public static bool go = false;
     private EntityManager entityManager;
-
-    void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.Space))
-        {
-            go = true;
-        }    
-    }
 
     void Start()
     {
         grid = new Entity[gridSize.x,gridSize.y];
         ns = nodeSize;
-        walkableNodesCount = 0;
+        //walkableNodesCount = 0;
         
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
         Entity node;
@@ -50,7 +40,7 @@ public class GridGenerator : MonoBehaviour
                 node = entityManager.CreateEntity(Bootstrap._nodeArchetype);
                 entityManager.SetComponentData(node, new Position { Value = new float3(xPos, 0, yPos) });
                 
-                if (Physics.CheckBox(new Vector3(xPos, 0, yPos), Vector3.one * (nodeSize / 2f)/*, Quaternion.identity, unwalkable*/))
+                if (Physics.CheckBox(new Vector3(xPos, 0, yPos), Vector3.one * (nodeSize / 2f)))
                 {
                     entityManager.AddComponentData(node, new Walkable { Value = false});
                     entityManager.SetSharedComponentData(node, unwalkableLook);
@@ -59,7 +49,7 @@ public class GridGenerator : MonoBehaviour
                 {
                     entityManager.AddComponentData(node, new Walkable { Value = true});
                     entityManager.SetSharedComponentData(node, nodeLook);
-                    walkableNodesCount++;
+                    //walkableNodesCount++;
                 }
 
                 grid[x, y] = node;                

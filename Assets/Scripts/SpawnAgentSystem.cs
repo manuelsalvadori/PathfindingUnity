@@ -31,13 +31,14 @@ public class SpawnAgentSystem : ComponentSystem
     {
         Random rnd = new Random((uint)(Time.time*10)+1);
 
-        for (int i = 0; i < 16; i++)
+        for (int i = 0; i < 15; i++)
         {
             var rndY = rnd.NextFloat(-24.9f, 24.9f);
+            var rndY2 = rnd.NextFloat(-24.9f, 24.9f);
             var agent = em.CreateEntity(agentArchetype);
             em.SetSharedComponentData(agent, Bootstrap.agentLook);
             em.SetComponentData(agent, new Position{Value = new float3(-24.6f, 1, rndY)});
-            em.SetComponentData(agent, new Target{Value = new float3(24.9f, 1, rndY)});
+            em.SetComponentData(agent, new Target{Value = new float3(24.6f, 1, rndY2)});
         }
     }
 //    

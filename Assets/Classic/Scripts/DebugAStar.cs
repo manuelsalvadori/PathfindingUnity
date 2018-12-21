@@ -1,181 +1,157 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Rendering;
 using UnityEngine;
 
-public class DebugAStar : MonoBehaviour
+public unsafe class DebugAStar : MonoBehaviour
 {
     public Dictionary<int2, int3> costs = new Dictionary<int2, int3>();
     private EntityManager em;
     private MeshInstanceRenderer openLook;
     private MeshInstanceRenderer closedLook;
+    private int2 start;
     void Start()
     {
         em = World.Active.GetOrCreateManager<EntityManager>();
         openLook = Bootstrap.GetLook("openLook");
         closedLook = Bootstrap.GetLook("ClosedLook");
+        start = GridGenerator.ClosestNode(new float3(-24.6f, 1, -24.6f));
+        
+        
+        var mh = new NativeMinHeap(5, Allocator.Temp);
+        mh.Push(new MinHeapNode(new Entity{Index = 0}, new int2(0,0),0,0));
+        mh.Push(new MinHeapNode(new Entity{Index = 1}, new int2(0,0),0,1));
+        mh.Push(new MinHeapNode(new Entity{Index = 2}, new int2(0,0),0,2));
+        mh.Push(new MinHeapNode(new Entity{Index = 3}, new int2(0,0),1,1));
+        // OTTIMIZZARE!!!!!!!!!!!!!!!!
+        mh.IfContainsRemove(new Entity {Index = 3});
+        mh.Push(new MinHeapNode(new Entity{Index = 4}, new int2(0,0),2,1));
+
+        MinHeapNode a = new MinHeapNode();
+        while (mh.HasNext())
+        {
+            a = mh.Pop();
+            Debug.Log(a.NodeEntity.Index+ " "+ mh.HasNext());            
+        }
+        mh.Dispose();
+
     }
 
     // Update is called once per frame
     void Update()
     {
         if(Input.GetKeyDown(KeyCode.T))
-            StartCoroutine(AStarSolver(new int2(14,12), new int2(9,19)));
+            StartCoroutine(AStarSolver(start, start +  new int2(26,49)));
     }
 
     private IEnumerator AStarSolver(int2 start, int2 goal)
-    {  
-        var openSet = new List<DebugNode>();
-        var closedSet = new Dictionary<Entity, DebugNode>();
-            
-        var startNode = new DebugNode(GridGenerator.grid[start.x,start.y], start.x, start.y);
-        openSet.Add(startNode);
-        int c = 0;
+    {
+        var maxLength = 2500;
         
-        while (openSet.Count > 0)
+        var openSet = new NativeMinHeap(maxLength, Allocator.Persistent);
+        var closedSet = new NativeArray<MinHeapNode>(maxLength, Allocator.Persistent);
+        var G_Costs = new NativeArray<int>(maxLength, Allocator.Persistent);
+        var neighbours = new NativeList<int2>(Allocator.Persistent);
+
+        var startNode = new MinHeapNode(GridGenerator.grid[start.x,start.y], start);
+                        
+        openSet.Push(startNode);
+        var c = 0;
+        while (openSet.HasNext())
         {
-            var currentNode = openSet[0];
-            Debug.Log("####################################################### openset.count: "+openSet.Count);
-            for (int i = 1; i < openSet.Count; i++)
-            {
-                if (openSet[i].F_Cost < currentNode.F_Cost)
-                {
-                    currentNode = openSet[i];
-                }
-                Debug.Log("************************** currentBest: " + currentNode.F_Cost + " openSet["+i+"] " + openSet[i].F_Cost + " pos: " + openSet[i].X+ "," + openSet[i].Y);
-            }
-            
-            if(!costs.ContainsKey(new int2(currentNode.X, currentNode.Y)))
-                costs.Add(new int2(currentNode.X, currentNode.Y), new int3(0,0,0));
-            
-            Debug.Log("While " + ++c + " current: " + currentNode.X + "," + currentNode.Y + " currentCosts: " + costs[new int2(currentNode.X, currentNode.Y)]); 
-            //Debug.Log("A* current: " + currentNode.X + "," + currentNode.Y);
+            var currentNode = openSet.Pop();
 
-            openSet.Remove(currentNode);                
-            closedSet.Add(currentNode.NodeEntity, currentNode);
-            em.SetSharedComponentData(currentNode.NodeEntity, closedLook);
+            Debug.Log("Iteration " + c++ + " closed: "+ currentNode.IsClosed + " current: "+ currentNode.Position + " f:" + currentNode.F_Cost +" h:" + currentNode.H_Cost+ " ************************************");
+            
+            currentNode.IsClosed = 1;
+            closedSet[GetIndex(currentNode.Position)] = currentNode;
+            
+            em.SetSharedComponentData(currentNode.NodeEntity, Bootstrap.closedLook);
 
-            if (currentNode.X == goal.x && currentNode.Y == goal.y)
+            if (currentNode.Position.x == goal.x && currentNode.Position.y == goal.y)
             {
-                //Debug.Log("fine");
+                var path = new NativeList<int2>(Allocator.TempJob);
                 var current = currentNode;
-                while(current.ParentEntity != Entity.Null)
+                while(current.ParentPosition.x != -1)
                 {
+                    path.Add(current.Position);
                     em.SetSharedComponentData(current.NodeEntity, Bootstrap.pathLook);
-                    current = closedSet[current.ParentEntity];
-                    //CreatePathStep(agent, i, path[i]);
+                    current = closedSet[GetIndex(current.ParentPosition)];
                 }
+                path.Add(current.Position);
                 em.SetSharedComponentData(current.NodeEntity, Bootstrap.pathLook);
+                    
+                path.Dispose();
                 break;
             }
 
-            List<DebugNode> neighbours = GetNeighbours(currentNode.X, currentNode.Y, ref openSet);
+            GetNeighbours(currentNode.Position, ref neighbours);
 
-            for (int i = 0; i < neighbours.Count; i++)
-            {
-                if (closedSet.ContainsKey(neighbours[i].NodeEntity))
+            for (int i = 0; i < neighbours.Length; i++)
+            {                
+                var neighbourEntity = GridGenerator.grid[neighbours[i].x, neighbours[i].y];
+                if (closedSet[GetIndex(neighbours[i])].IsClosed == 1 || !em.GetComponentData<Walkable>(neighbourEntity).Value)
                     continue;
                 
-                int costSoFar = costs[new int2(currentNode.X, currentNode.Y)].y +
-                                Heuristics.OctileDistance(new int2(currentNode.X, currentNode.Y),
-                                    new int2(neighbours[i].X, neighbours[i].Y));
-                    
-                bool inOpenSet = false;
-                foreach (var node in openSet)
-                {
-                    if (node.X == neighbours[i].X && node.Y == neighbours[i].Y)
-                    {
-                        inOpenSet = true;
-                        break;
-                    }
-                }
-                em.SetSharedComponentData(neighbours[i].NodeEntity, openLook);
+                int costSoFar = G_Costs[GetIndex(currentNode.Position)] + Heuristics.OctileDistance(currentNode.Position, neighbours[i]);
 
-                if(!costs.ContainsKey(new int2(neighbours[i].X, neighbours[i].Y)))
-                    costs.Add(new int2(neighbours[i].X, neighbours[i].Y), new int3(0,0,0));
-                
-                Debug.Log("for" + i + ": " + neighbours[i].X + "," + neighbours[i].Y + " " + inOpenSet + " costSoFar: " + costSoFar + " Gcost: " + costs[new int2(neighbours[i].X,neighbours[i].Y)].y);
-                if (!inOpenSet || costSoFar < costs[new int2(neighbours[i].X, neighbours[i].Y)].y)
+                em.SetSharedComponentData(GridGenerator.grid[neighbours[i].x,neighbours[i].y], Bootstrap.openLook);
+
+                if (G_Costs[GetIndex(neighbours[i])] == 0 || costSoFar < G_Costs[GetIndex(neighbours[i])])
                 {
-                    if(inOpenSet)
-                        Debug.Log("Update G cost");
                     // update costs
-                    int3 neibCosts = costs[new int2(neighbours[i].X,neighbours[i].Y)];
-                    neibCosts.y = costSoFar;
-                    neibCosts.z = Heuristics.OctileDistance(new int2(neighbours[i].X, neighbours[i].Y), goal);
-                    neibCosts.x = neibCosts.y + neibCosts.z;
-                    costs[new int2(neighbours[i].X, neighbours[i].Y)] = neibCosts;
+                    int h = Heuristics.OctileDistance(neighbours[i], goal);
+                    int f = costSoFar + h;
+                    G_Costs[GetIndex(neighbours[i])] = costSoFar;
  
-                    neighbours[i].F_Cost = neibCosts.x;
-                    neighbours[i].ParentEntity = currentNode.NodeEntity;
-                    //Debug.Log("n: " + neighbour.X + "," + neighbour.Y +" g:" + neighbour.G_Cost +" h:" + neighbour.H_Cost);
-                    
-                    if(!inOpenSet)
-                        openSet.Add(neighbours[i]);
+                    var node = new MinHeapNode(neighbourEntity, neighbours[i], currentNode.Position, f, h);
+                    // if contains => update
+                    Debug.Log("current neighbour: "+node.Position);
+                    if(openSet.IfContainsRemove(node.NodeEntity))
+                        Debug.Log("OpenSet: Updating " + node.Position);
+                    if(node.Position.x == 2 && node.Position.y == 15)
+                        Debug.Log("PUSH 2,15");
+                    openSet.Push(node);
                 }
             }
-
-            foreach (DebugNode m in openSet)
-            {
-                //Debug.Log("Openlist: " + m.X + "," + m.Y + " " + m.NodeEntity);
-            }
-            yield return new WaitUntil(() => Input.GetKeyDown(KeyCode.Space));
-            yield return new WaitUntil(() => Input.GetKeyDown(KeyCode.Space));   
+//            yield return new WaitUntil(() => Input.GetKeyDown(KeyCode.Space));
+//            yield return new WaitUntil(() => Input.GetKeyDown(KeyCode.Space));
+            yield return null;
         }
-        Debug.Log("Fine fail");
+        openSet.Dispose();
+        closedSet.Dispose();
+        G_Costs.Dispose();
+        neighbours.Dispose();
     }
 
-    private List<DebugNode> GetNeighbours(int xCoord, int yCoord, ref List<DebugNode> openSet)
+    private void GetNeighbours(int2 coords, ref NativeList<int2> neighbours)
     {   
-        var neighbours = new List<DebugNode>();
+        neighbours.Clear();
         for (int x = -1; x <= 1; x++)
         {
-            var checkX = xCoord + x;
+            var checkX = coords.x + x;
             for (int y = -1; y <= 1; y++)
             {
                 if(x == 0 && y == 0)
                     continue;
 
-                var checkY = yCoord + y;
-                if (checkX >= 0 && checkX < GridGenerator.grid.GetLength(0) && checkY >= 0 && checkY < GridGenerator.grid.GetLength(1))
+                var checkY = coords.y + y;
+                if (checkX >= 0 && checkX < 50 && checkY >= 0 && checkY < 50)
                 {
-                    Entity checkNode = GridGenerator.grid[xCoord + x, yCoord + y];
-                    if(em.GetComponentData<Walkable>(checkNode).Value)
-                    {
-                        var mhn = new DebugNode(checkNode, xCoord + x, yCoord + y);
-                        foreach (var node in openSet)
-                        {
-                            if (node.X == checkX && node.Y == checkY)
-                                mhn = node;
-                        }
-                        neighbours.Add(mhn);
-                    }                    
-                }                    
+                    neighbours.Add(new int2(checkX,checkY));
+                }
             }
         }            
-        return neighbours;
     }
-    
-    public class DebugNode
+        
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int GetIndex(int2 i)
     {
-        public DebugNode(Entity nodeEntity, int x, int y)
-        {
-            NodeEntity = nodeEntity;
-            ParentEntity = Entity.Null;
-            X = x;
-            Y = y;
-            F_Cost = 0;
-            Next = -1;
-        }
- 
-        public Entity NodeEntity { get; }
-        public Entity ParentEntity { get; set; }
-        public int X { get; }
-        public int Y { get; }
-        public int F_Cost { get; set; }
-        public int Next { get; set; }
+        return (i.y * 50) + i.x;
     }
 }
-
