@@ -20,11 +20,11 @@ public class AStarSystem : JobComponentSystem
         
         [NativeDisableParallelForRestriction]
         public BufferFromEntity<Waypoints> Waypoints;
+        
         public void Execute(int index)
         {  
             int2 start = GridGenerator.ClosestNode(AgentGroup.Position[index].Value);
             int2 goal = GridGenerator.ClosestNode(AgentGroup.Target[index].Value);
-            int2 goal2 = start +  new int2(49,0);
             Commands.RemoveComponent<Target>(index, AgentGroup.AgentEntity[index]);
             
             AStarSolver(start, goal, index, AgentGroup.AgentEntity[index]);
@@ -165,7 +165,7 @@ public class AStarSystem : JobComponentSystem
             Waypoints = GetBufferFromEntity<Waypoints>(),
             gridSize = new int2(GridGenerator.grid.GetLength(0), GridGenerator.grid.GetLength(1))
         }.Schedule(_agentGroup.Length, 1, inputDeps);
-        jh.Complete();
+        //jh.Complete();
         return jh;
     }
 

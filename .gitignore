@@ -32,6 +32,7 @@ sysinfo.txt
 
 /Assets/CodeSamples/*.*
 /*.meta
+*.meta
 *.cs.meta
 /*.cs.meta
 *.pidb.meta

@@ -119,9 +119,9 @@ public unsafe class DebugAStar : MonoBehaviour
                     openSet.Push(node);
                 }
             }
-//            yield return new WaitUntil(() => Input.GetKeyDown(KeyCode.Space));
-//            yield return new WaitUntil(() => Input.GetKeyDown(KeyCode.Space));
-            yield return null;
+            yield return new WaitUntil(() => Input.GetKeyDown(KeyCode.Space));
+            yield return new WaitUntil(() => Input.GetKeyDown(KeyCode.Space));
+//           yield return null;
         }
         openSet.Dispose();
         closedSet.Dispose();
