@@ -65,7 +65,7 @@ public class Bootstrap
     {
         _nodeArchetype = entityManager.CreateArchetype(
             typeof(Position),
-            typeof(MeshInstanceRenderer),
+            //typeof(MeshInstanceRenderer),
             typeof(Node)           
         );
     }

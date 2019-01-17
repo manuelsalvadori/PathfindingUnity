@@ -30,6 +30,8 @@
  * <http://gamma.cs.unc.edu/RVO2/>
  */
 
+using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -101,7 +103,7 @@ namespace RVO
             }
         }
 
-        internal Dictionary<int, Agent> agents_;
+        internal ConcurrentDictionary<int, Agent> agents_;
         internal IList<Obstacle> obstacles_;
         internal KdTree kdTree_;
         internal float timeStep_;
@@ -146,7 +148,9 @@ namespace RVO
                 timeHorizonObst_ = defaultAgent_.timeHorizonObst_,
                 velocity_ = defaultAgent_.velocity_
             };
-            agents_.Add(agent.id_, agent);
+
+            agents_.TryAdd(agent.id_, agent);
+
 
             return agent.id_;
         }
@@ -199,7 +203,7 @@ namespace RVO
                 timeHorizonObst_ = timeHorizonObst,
                 velocity_ = velocity
             };
-            agents_.Add(agent.id_, agent);
+            agents_.TryAdd(agent.id_, agent);
 
             return agent.id_;
         }
@@ -213,7 +217,7 @@ namespace RVO
          */
         public bool removeAgent(int id)
         {
-            return agents_.Remove(id);
+            return agents_.TryRemove(id, out _);
         }
 
         /**
@@ -279,7 +283,7 @@ namespace RVO
         public void Clear()
         {
             count = 0;
-            agents_ = new Dictionary<int, Agent>();
+            agents_ = new ConcurrentDictionary<int, Agent>();
             defaultAgent_ = null;
             kdTree_ = new KdTree();
             obstacles_ = new List<Obstacle>();

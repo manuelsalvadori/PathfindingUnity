@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using RVO;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -24,18 +25,6 @@ public class GridGenerator : MonoBehaviour
         grid = new Entity[gridSize.x,gridSize.y];
         ns = nodeSize;
         s_gridSize = gridSize;
-        
-//        Posizioni dei vertici di un box collider
-//        BoxCollider b = obj.GetComponent<BoxCollider>(); //retrieves the Box Collider of the GameObject called obj
-//
-//        Vector3 vertice1 = myobject.transform.TransformPoint(b.center + new Vector3(-b.size.x, -b.size.y, -b.size.z)*0.5f);
-//        Vector3 vertice2 = myobject.transform.TransformPoint(b.center + new Vector3(b.size.x, -b.size.y, -b.size.z)*0.5f);
-//        Vector3 vertice3 = myobject.transform.TransformPoint(b.center + new Vector3(b.size.x, -b.size.y, b.size.z)*0.5f);
-//        Vector3 vertice4 = myobject.transform.TransformPoint(b.center + new Vector3(-b.size.x, -b.size.y, b.size.z)*0.5f);
-//        Vector3 vertice5 = myobject.transform.TransformPoint(b.center + new Vector3(-b.size.x, b.size.y, -b.size.z)*0.5f);
-//        Vector3 vertice6 = myobject.transform.TransformPoint(b.center + new Vector3(b.size.x, b.size.y, -b.size.z)*0.5f);
-//        Vector3 vertice7 = myobject.transform.TransformPoint(b.center + new Vector3(b.size.x, b.size.y, b.size.z)*0.5f);
-//        Vector3 vertice8 = myobject.transform.TransformPoint(b.center + new Vector3(-b.size.x, b.size.y, b.size.z)*0.5f);
     }
 
     void Start()
@@ -61,18 +50,36 @@ public class GridGenerator : MonoBehaviour
                 if (Physics.CheckBox(new Vector3(xPos, 0, yPos), Vector3.one * (nodeSize / 2f)))
                 {
                     entityManager.AddComponentData(node, new Walkable { Value = false});
-                    entityManager.SetSharedComponentData(node, unwalkableLook);
+                    //entityManager.SetSharedComponentData(node, unwalkableLook);
                 }
                 else
                 {
                     entityManager.AddComponentData(node, new Walkable { Value = true});
-                    entityManager.SetSharedComponentData(node, nodeLook);
+                    //entityManager.SetSharedComponentData(node, nodeLook);
                     //walkableNodesCount++;
                 }
 
                 grid[x, y] = node;                
             }
         }
+        
+        // processing obstacles
+
+        var obstacles = FindObjectsOfType<BoxCollider>();
+
+        foreach(var obst in obstacles)
+        {
+            var go = obst.gameObject;
+            var center = new float2(go.transform.position.x, go.transform.position.z);
+            var vertices = new List<float2>();
+            vertices.Add(center + new float2(-go.transform.localScale.x, -go.transform.localScale.z) * 0.5f);
+            vertices.Add(center + new float2(go.transform.localScale.x, -go.transform.localScale.z) * 0.5f);
+            vertices.Add(center + new float2(go.transform.localScale.x, go.transform.localScale.z) * 0.5f);
+            vertices.Add(center + new float2(-go.transform.localScale.x, go.transform.localScale.z) * 0.5f);
+
+            Simulator.Instance.addObstacle(vertices);
+        }
+        Simulator.Instance.processObstacles();
     }
 
     public static int2 ClosestNode(float3 pos)

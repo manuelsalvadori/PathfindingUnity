@@ -59,7 +59,7 @@ public class RVOSystem : JobComponentSystem
 
             var dir = next - agentLoc;
             // next waypoint
-            if(dir.x < 0.05f && dir.y < 0.05f)
+            if(dir.x < 0.1f && dir.y < 0.1f)
                 waypoints[agent].RemoveAt(l - 1);
         }
     }

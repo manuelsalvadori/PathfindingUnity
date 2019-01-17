@@ -33,6 +33,7 @@
 using System.Collections.Generic;
 using System;
 using Unity.Mathematics;
+using UnityEngine;
 
 namespace RVO
 {

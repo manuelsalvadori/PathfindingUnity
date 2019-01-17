@@ -18,6 +18,10 @@ public class SpawnAgentSystem : ComponentSystem
     private EntityManager em;
     private int count;
 
+    public static int maxLimit = 9900;
+    public static int limit = 5000;
+    public static int newAgents = 70;
+
     public static NativeHashMap<int, Entity> agents;
 
     protected override void OnCreateManager()
@@ -34,11 +38,11 @@ public class SpawnAgentSystem : ComponentSystem
         );
         count = 300;
         
-        agents = new NativeHashMap<int, Entity>(5000, Allocator.Persistent);
+        agents = new NativeHashMap<int, Entity>(maxLimit + 200, Allocator.Persistent);
         
         // RVO2 Init
         Simulator.Instance.setTimeStep(0.25f);
-        Simulator.Instance.setAgentDefaults(10.0f, 10, 5.0f, 5.0f, 0.25f, 0.1f, new float2(0.0f, 0.0f));
+        Simulator.Instance.setAgentDefaults(3.0f, 10, 5.0f, 5.0f, 0.1f, 0.12f, new float2(0.0f, 0.0f));
         
     }
 
@@ -46,13 +50,13 @@ public class SpawnAgentSystem : ComponentSystem
     {
         count++;
         
-        if(count < 150)
+        if(count < 20 || agents.Length > limit)
             return;
 
         count = 0;
         Random rnd = new Random((uint)(Time.time*10)+1);
 
-        for (int i = 0; i < 20; i++)
+        for (int i = 0; i < newAgents/2; i++)
         {
             var rndY = rnd.NextFloat(-24.9f, 24.9f);
             var rndY2 = rnd.NextFloat(-24.9f, 24.9f);
@@ -69,7 +73,7 @@ public class SpawnAgentSystem : ComponentSystem
             agents.TryAdd(index, agent);
         }
         
-        for (int i = 0; i < 20; i++)
+        for (int i = 0; i < newAgents/2; i++)
         {
             var rndX = rnd.NextFloat(-24.9f, 24.9f);
             var rndX2 = rnd.NextFloat(-24.9f, 24.9f);
