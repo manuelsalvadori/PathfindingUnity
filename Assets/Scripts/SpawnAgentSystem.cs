@@ -64,10 +64,10 @@ public class SpawnAgentSystem : ComponentSystem
             var agent = em.CreateEntity(agentArchetype);
             em.SetSharedComponentData(agent, Bootstrap.agentLook);
             
-            var pos = new Position {Value = new float3(-24.6f, 1, rndY)};
+            var pos = new Position {Value = new float3(-24.6f, 0, rndY)};
 
             em.SetComponentData(agent, pos);
-            em.SetComponentData(agent, new Target{Value = new float3(24.6f, 1, rndY2)});
+            em.SetComponentData(agent, new Target{Value = new float3(24.6f, 0, rndY2)});
             
             var index = Simulator.Instance.addAgent(pos.Value.xz);
             agents.TryAdd(index, agent);

@@ -50,7 +50,7 @@ public class RVOSystem : JobComponentSystem
 
             Simulator.Instance.setAgentPrefVelocity(index, goalVector);
             
-            var newPos = new float3(agentLoc.x, 1f, agentLoc.y);
+            var newPos = new float3(agentLoc.x, 0.15f, agentLoc.y);
             
             Positions[agent] = new Position {Value = newPos};
             
@@ -61,6 +61,14 @@ public class RVOSystem : JobComponentSystem
             // next waypoint
             if(dir.x < 0.1f && dir.y < 0.1f)
                 waypoints[agent].RemoveAt(l - 1);
+        }
+    }
+
+    public struct doStepJob : IJob
+    {
+        public void Execute()
+        {
+            Simulator.Instance.doStep();
         }
     }
 
@@ -77,68 +85,14 @@ public class RVOSystem : JobComponentSystem
             
         }.Schedule(Simulator.Instance.getNumAgents(), 64, inputDeps);
         job.Complete();
+
+        return new doStepJob().Schedule(job);
         
-        Simulator.Instance.doStep();
+        //Simulator.Instance.doStep();
         
-        return job;
+        //return job;
     }
     
     private class RVOBarrier : BarrierSystem {}
     [Inject] private RVOBarrier _rvoBarrier;
 }
-
-//
-//
-//using Unity.Entities;
-//using Unity.Jobs;
-//using RVO;
-//using Unity.Collections;
-//using Unity.Mathematics;
-//using Unity.Transforms;
-//using Debug = UnityEngine.Debug;
-//
-//public class RVOSystem : JobComponentSystem
-//{
-//    public struct RVOJob : IJobParallelFor
-//    {
-//        [NativeDisableParallelForRestriction]
-//        public ComponentDataFromEntity<Position> Positions;
-//        
-//        [ReadOnly]
-//        [DeallocateOnJobCompletionAttribute]
-//        public NativeArray<int> Indexes;
-//        
-//        public void Execute(int i)
-//        {
-//            var index = Indexes[i];
-//            float2 agentLoc = Simulator.Instance.getAgentPosition(index);
-//            float2 goalVector = RVOSimulator.goals[index].xz - agentLoc;
-//
-//            if (RVOMath.absSq(goalVector) > 1.0f)
-//            {
-//                goalVector = math.normalize(goalVector);
-//            }
-//
-//            Simulator.Instance.setAgentPrefVelocity(index, goalVector);
-//            var newpos = new float3(agentLoc.x, 1f, agentLoc.y);
-//            
-//            RVOSimulator.agents.TryGetValue(index, out var agent);
-//            Positions[agent] = new Position {Value = newpos};
-//        }
-//    }
-//
-//    [Inject] private ComponentDataFromEntity<Position> _positions;
-//
-//    protected override JobHandle OnUpdate(JobHandle inputDeps)
-//    {
-//        var job = new RVOJob
-//        {
-//            Positions = _positions,
-//            Indexes = new NativeArray<int>(Simulator.Instance.getAgentsKeysArray(), Allocator.TempJob)
-//            
-//        }.Schedule(Simulator.Instance.getNumAgents(), 64, inputDeps);
-//        job.Complete();
-//        Simulator.Instance.doStep();
-//        return job;
-//    }
-//}
