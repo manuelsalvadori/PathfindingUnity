@@ -1,46 +1,36 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using RVO;
-using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Rendering;
 using Unity.Transforms;
 using UnityEngine;
 
-public class GridGenerator : MonoBehaviour
+public class GridGenerator : JobComponentSystem
 {
-    public int2 gridSize;
-    public static int2 s_gridSize;
-    public float nodeSize;
-    private static float ns;
+    public static int2 s_gridSize = new int2(50, 50);
+    private static float nodeSize = 1;
     public static Entity[,] grid;
-    //public static int walkableNodesCount;
     private MeshInstanceRenderer unwalkableLook;
     public static MeshInstanceRenderer nodeLook;
     private EntityManager entityManager;
 
-    private void Awake()
+    protected override void OnStartRunning()
     {
-        grid = new Entity[gridSize.x,gridSize.y];
-        ns = nodeSize;
-        s_gridSize = gridSize;
-    }
+        base.OnStartRunning();
 
-    void Start()
-    {
-        //walkableNodesCount = 0;
+        grid = new Entity[s_gridSize.x,s_gridSize.y];
         
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
         Entity node;
         nodeLook = Bootstrap.GetLook("NodeLook");
         unwalkableLook = Bootstrap.GetLook("UnwalkableNodeLook");
         
-        for (int x = 0; x < gridSize.x; x++)
+        for (int x = 0; x < s_gridSize.x; x++)
         {
             float xPos = GridToWorldPosX(x);
             
-            for (int y = 0; y < gridSize.y; y++)
+            for (int y = 0; y < s_gridSize.y; y++)
             {
                 float yPos = GridToWorldPosY(y);
                 
@@ -56,16 +46,13 @@ public class GridGenerator : MonoBehaviour
                 {
                     entityManager.AddComponentData(node, new Walkable { Value = true});
                     //entityManager.SetSharedComponentData(node, nodeLook);
-                    //walkableNodesCount++;
                 }
-
                 grid[x, y] = node;                
             }
         }
         
         // processing obstacles
-
-        var obstacles = FindObjectsOfType<BoxCollider>();
+        var obstacles = Object.FindObjectsOfType<BoxCollider>();
 
         foreach(var obst in obstacles)
         {
@@ -90,33 +77,28 @@ public class GridGenerator : MonoBehaviour
     
     public static float2 GridToWorldPos(int2 coord)
     {
-        var x = coord.x - (grid.GetLength(0) / 2f) + (ns / 2f);
-        var y = coord.y - (grid.GetLength(1) / 2f) + (ns / 2f);
+        var x = coord.x - (grid.GetLength(0) / 2f) + (nodeSize / 2f);
+        var y = coord.y - (grid.GetLength(1) / 2f) + (nodeSize / 2f);
         return new float2(x,y);
     }
 
     public static float GridToWorldPosX(int coord)
     {
-        return coord - (grid.GetLength(0) / 2f) + (ns / 2f);
+        return coord - (grid.GetLength(0) / 2f) + (nodeSize / 2f);
     }
 
     public static float GridToWorldPosY(int coord)
     {
-        return coord - (grid.GetLength(1) / 2f) + (ns / 2f);
+        return coord - (grid.GetLength(1) / 2f) + (nodeSize / 2f);
     }
     
     public static int WorldPosToGridX(float pos)
     {
-        return (int) (pos + (grid.GetLength(0) / 2f) - (ns / 2f));
+        return (int) (pos + (grid.GetLength(0) / 2f) - (nodeSize / 2f));
     }
     
     public static int WorldPosToGridY(float pos)
     {
-        return (int) (pos + (grid.GetLength(1) / 2f) - (ns / 2f));
-    }
-
-    private void OnDrawGizmos()
-    {
-        Gizmos.DrawWireCube(transform.position, new Vector3(gridSize.x, 1, gridSize.y) * nodeSize);
+        return (int) (pos + (grid.GetLength(1) / 2f) - (nodeSize / 2f));
     }
 }

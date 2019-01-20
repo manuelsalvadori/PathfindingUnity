@@ -45,63 +45,63 @@ namespace RVO
      */
     public class Simulator
     {
-        /**
-         * <summary>Defines a worker.</summary>
-         */
-        private class Worker
-        {
-            private ManualResetEvent doneEvent_;
-            private int end_;
-            private int start_;
-
-            /**
-             * <summary>Constructs and initializes a worker.</summary>
-             *
-             * <param name="start">Start.</param>
-             * <param name="end">End.</param>
-             * <param name="doneEvent">Done event.</param>
-             */
-            internal Worker(int start, int end, ManualResetEvent doneEvent)
-            {
-                start_ = start;
-                end_ = end;
-                doneEvent_ = doneEvent;
-            }
-
-            /**
-             * <summary>Performs a simulation step.</summary>
-             *
-             * <param name="obj">Unused.</param>
-             */
-            internal void step(object obj)
-            {
-                var keys = Instance.getAgentsKeysArray();
-                for (int agentNo = start_; agentNo < end_; ++agentNo)
-                {
-                    Instance.agents_[keys[agentNo]].computeNeighbors();
-                    Instance.agents_[keys[agentNo]].computeNewVelocity();
-                }
-
-                doneEvent_.Set();
-            }
-
-            /**
-             * <summary>updates the two-dimensional position and
-             * two-dimensional velocity of each agent.</summary>
-             *
-             * <param name="obj">Unused.</param>
-             */
-            internal void update(object obj)
-            {
-                var keys = Instance.getAgentsKeysArray();
-                for (int agentNo = start_; agentNo < end_; ++agentNo)
-                {
-                    Instance.agents_[keys[agentNo]].update();
-                }
-
-                doneEvent_.Set();
-            }
-        }
+//        /**
+//         * <summary>Defines a worker.</summary>
+//         */
+//        private class Worker
+//        {
+//            private ManualResetEvent doneEvent_;
+//            private int end_;
+//            private int start_;
+//
+//            /**
+//             * <summary>Constructs and initializes a worker.</summary>
+//             *
+//             * <param name="start">Start.</param>
+//             * <param name="end">End.</param>
+//             * <param name="doneEvent">Done event.</param>
+//             */
+//            internal Worker(int start, int end, ManualResetEvent doneEvent)
+//            {
+//                start_ = start;
+//                end_ = end;
+//                doneEvent_ = doneEvent;
+//            }
+//
+//            /**
+//             * <summary>Performs a simulation step.</summary>
+//             *
+//             * <param name="obj">Unused.</param>
+//             */
+//            internal void step(object obj)
+//            {
+//                var keys = Instance.getAgentsKeysArray();
+//                for (int agentNo = start_; agentNo < end_; ++agentNo)
+//                {
+//                    Instance.agents_[keys[agentNo]].computeNeighbors();
+//                    Instance.agents_[keys[agentNo]].computeNewVelocity();
+//                }
+//
+//                doneEvent_.Set();
+//            }
+//
+//            /**
+//             * <summary>updates the two-dimensional position and
+//             * two-dimensional velocity of each agent.</summary>
+//             *
+//             * <param name="obj">Unused.</param>
+//             */
+//            internal void update(object obj)
+//            {
+//                var keys = Instance.getAgentsKeysArray();
+//                for (int agentNo = start_; agentNo < end_; ++agentNo)
+//                {
+//                    Instance.agents_[keys[agentNo]].update();
+//                }
+//
+//                doneEvent_.Set();
+//            }
+//        }
 
         public ConcurrentDictionary<int, Agent> agents_;
         internal IList<Obstacle> obstacles_;
@@ -113,7 +113,7 @@ namespace RVO
         private int count;
         private Agent defaultAgent_;
         private ManualResetEvent[] doneEvents_;
-        private Worker[] workers_;
+        //private Worker[] workers_;
         private int numWorkers_;
         private float globalTime_;
 
@@ -290,7 +290,7 @@ namespace RVO
             globalTime_ = 0.0f;
             timeStep_ = 0.1f;
 
-            SetNumWorkers(0);
+            //SetNumWorkers(0);
         }
 
         public void buildAgentTree()
@@ -303,48 +303,48 @@ namespace RVO
             globalTime_ += timeStep_;
         }
 
-        /**
-         * <summary>Performs a simulation step and updates the two-dimensional
-         * position and two-dimensional velocity of each agent.</summary>
-         *
-         * <returns>The global time after the simulation step.</returns>
-         */
-        public float doStep()
-        {
-            workers_ = new Worker[numWorkers_];
-            doneEvents_ = new ManualResetEvent[workers_.Length];
-
-            for (int block = 0; block < workers_.Length; ++block)
-            {
-                var numAgents = getNumAgents();
-                doneEvents_[block] = new ManualResetEvent(false);
-                var start = block * numAgents / workers_.Length;
-                var end = (block + 1) * numAgents / workers_.Length;
-                workers_[block] = new Worker(start, end, doneEvents_[block]);
-            }
-
-            kdTree_.buildAgentTree();
-
-            for (int block = 0; block < workers_.Length; ++block)
-            {
-                doneEvents_[block].Reset();
-                ThreadPool.QueueUserWorkItem(workers_[block].step);
-            }
-
-            WaitHandle.WaitAll(doneEvents_);
-
-            for (int block = 0; block < workers_.Length; ++block)
-            {
-                doneEvents_[block].Reset();
-                ThreadPool.QueueUserWorkItem(workers_[block].update);
-            }
-
-            WaitHandle.WaitAll(doneEvents_);
-
-            globalTime_ += timeStep_;
-
-            return globalTime_;
-        }
+//        /**
+//         * <summary>Performs a simulation step and updates the two-dimensional
+//         * position and two-dimensional velocity of each agent.</summary>
+//         *
+//         * <returns>The global time after the simulation step.</returns>
+//         */
+//        public float doStep()
+//        {
+//            workers_ = new Worker[numWorkers_];
+//            doneEvents_ = new ManualResetEvent[workers_.Length];
+//
+//            for (int block = 0; block < workers_.Length; ++block)
+//            {
+//                var numAgents = getNumAgents();
+//                doneEvents_[block] = new ManualResetEvent(false);
+//                var start = block * numAgents / workers_.Length;
+//                var end = (block + 1) * numAgents / workers_.Length;
+//                workers_[block] = new Worker(start, end, doneEvents_[block]);
+//            }
+//
+//            kdTree_.buildAgentTree();
+//
+//            for (int block = 0; block < workers_.Length; ++block)
+//            {
+//                doneEvents_[block].Reset();
+//                ThreadPool.QueueUserWorkItem(workers_[block].step);
+//            }
+//
+//            WaitHandle.WaitAll(doneEvents_);
+//
+//            for (int block = 0; block < workers_.Length; ++block)
+//            {
+//                doneEvents_[block].Reset();
+//                ThreadPool.QueueUserWorkItem(workers_[block].update);
+//            }
+//
+//            WaitHandle.WaitAll(doneEvents_);
+//
+//            globalTime_ += timeStep_;
+//
+//            return globalTime_;
+//        }
 
         /**
          * <summary>Returns the specified agent neighbor of the specified agent.
@@ -876,22 +876,22 @@ namespace RVO
             globalTime_ = globalTime;
         }
 
-        /**
-         * <summary>Sets the number of workers.</summary>
-         *
-         * <param name="numWorkers">The number of workers.</param>
-         */
-        public void SetNumWorkers(int numWorkers)
-        {
-            numWorkers_ = numWorkers;
-
-            if (numWorkers_ <= 0)
-            {
-                int completionPorts;
-                ThreadPool.GetMinThreads(out numWorkers_, out completionPorts);
-            }
-            workers_ = null;
-        }
+//        /**
+//         * <summary>Sets the number of workers.</summary>
+//         *
+//         * <param name="numWorkers">The number of workers.</param>
+//         */
+//        public void SetNumWorkers(int numWorkers)
+//        {
+//            numWorkers_ = numWorkers;
+//
+//            if (numWorkers_ <= 0)
+//            {
+//                int completionPorts;
+//                ThreadPool.GetMinThreads(out numWorkers_, out completionPorts);
+//            }
+//            workers_ = null;
+//        }
 
         /**
          * <summary>Sets the time step of the simulation.</summary>

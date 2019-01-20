@@ -85,16 +85,17 @@ public class RVOSystem : JobComponentSystem
     
     public struct RVOUpdate : IJobParallelFor
     {
-        [ReadOnly]
-        public NativeArray<int> Indexes;
+        [ReadOnly] public float deltaTime;
+        [ReadOnly] public NativeArray<int> Indexes;
 
         public void Execute(int i)
         {
-            Simulator.Instance.agents_[Indexes[i]].update();
+            Simulator.Instance.agents_[Indexes[i]].update(deltaTime);
         }
     }
 
     [Inject] private ComponentDataFromEntity<Position> _positions;
+    public static int maxSpeed = 70;
 
     protected override JobHandle OnUpdate(JobHandle inputDeps)
     {
@@ -117,7 +118,7 @@ public class RVOSystem : JobComponentSystem
         var stepJob = new RVOStep{Indexes = indexes}.Schedule(numAgents, 64, treeJob);
         stepJob.Complete();
 
-        var updateJob = new RVOUpdate{Indexes = indexes}.Schedule(numAgents, 64, stepJob);
+        var updateJob = new RVOUpdate{Indexes = indexes, deltaTime = Time.deltaTime * maxSpeed}.Schedule(numAgents, 64, stepJob);
         updateJob.Complete();
         
         indexes.Dispose();

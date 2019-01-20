@@ -6,6 +6,7 @@ public class UIManager : MonoBehaviour
     public Text agentsLimit;
     public Text newAgents;
     public Text count;
+    public Text maxSpeedT;
 
     private void Update()
     {
@@ -36,5 +37,17 @@ public class UIManager : MonoBehaviour
     {
         SpawnAgentSystem.newAgents -= 2;
         newAgents.text = "New agents: " + SpawnAgentSystem.newAgents;
+    }
+    
+    public void incrementMaxSpeed()
+    {
+        RVOSystem.maxSpeed ++;
+        maxSpeedT.text = "Max speed: " + RVOSystem.maxSpeed;
+    }
+    
+    public void decrementMaxSpeed()
+    {
+        RVOSystem.maxSpeed --;
+        maxSpeedT.text = "Max speed: " + RVOSystem.maxSpeed;
     } 
 }

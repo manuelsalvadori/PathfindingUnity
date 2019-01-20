@@ -496,10 +496,10 @@ namespace RVO
          * <summary>Updates the two-dimensional position and two-dimensional
          * velocity of this agent.</summary>
          */
-        public void update()
+        public void update(float deltaTime)
         {
             velocity_ = newVelocity_;
-            position_ += velocity_ * Simulator.Instance.timeStep_;
+            position_ += velocity_ * Simulator.Instance.timeStep_ * deltaTime;
         }
 
         /**
