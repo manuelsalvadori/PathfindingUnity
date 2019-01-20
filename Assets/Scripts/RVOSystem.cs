@@ -53,18 +53,16 @@ public class RVOSystem : JobComponentSystem
             var newPos = new float3(agentLoc.x, 0.15f, agentLoc.y);
             
             Positions[agent] = new Position {Value = newPos};
-            
-//            if(agent.Index == 2500)
-//                Debug.Log(Positions[agent].Value);
 
             var dir = next - agentLoc;
-            // next waypoint
+            
+            // remove waypoint
             if(dir.x < 0.1f && dir.y < 0.1f)
                 waypoints[agent].RemoveAt(l - 1);
         }
     }
 
-    public struct BuildTreeJob : IJob
+    public struct BuildKdTreeJob : IJob
     {
         public void Execute()
         {
@@ -74,7 +72,7 @@ public class RVOSystem : JobComponentSystem
     
     public struct RVOStep : IJobParallelFor
     {
-        [ReadOnly] [DeallocateOnJobCompletionAttribute]
+        [ReadOnly]
         public NativeArray<int> Indexes;
 
         public void Execute(int i)
@@ -87,13 +85,12 @@ public class RVOSystem : JobComponentSystem
     
     public struct RVOUpdate : IJobParallelFor
     {
-        [ReadOnly] [DeallocateOnJobCompletionAttribute]
+        [ReadOnly]
         public NativeArray<int> Indexes;
 
         public void Execute(int i)
         {
-            var index = Indexes[i];
-            Simulator.Instance.agents_[index].update();
+            Simulator.Instance.agents_[Indexes[i]].update();
         }
     }
 
@@ -111,22 +108,22 @@ public class RVOSystem : JobComponentSystem
         }.Schedule(Simulator.Instance.getNumAgents(), 64, inputDeps);
         agentsJob.Complete();
 
-        var treeJob = new BuildTreeJob().Schedule(agentsJob);
+        var treeJob = new BuildKdTreeJob().Schedule(agentsJob);
         treeJob.Complete();
 
         var numAgents = Simulator.Instance.getNumAgents();
+        var indexes = new NativeArray<int>(Simulator.Instance.getAgentsKeysArray(), Allocator.TempJob);
 
-        var stepJob = new RVOStep{Indexes = new NativeArray<int>(Simulator.Instance.getAgentsKeysArray(), Allocator.TempJob)}.Schedule(numAgents, 64, treeJob);
+        var stepJob = new RVOStep{Indexes = indexes}.Schedule(numAgents, 64, treeJob);
         stepJob.Complete();
 
-        var updateJob = new RVOUpdate{Indexes = new NativeArray<int>(Simulator.Instance.getAgentsKeysArray(), Allocator.TempJob)}.Schedule(numAgents, 64, stepJob);
+        var updateJob = new RVOUpdate{Indexes = indexes}.Schedule(numAgents, 64, stepJob);
         updateJob.Complete();
+        
+        indexes.Dispose();
         
         Simulator.Instance.doTimeStep();
         return updateJob;
-        //Simulator.Instance.doStep();
-
-        //return job;
     }
     
     private class RVOBarrier : BarrierSystem {}
