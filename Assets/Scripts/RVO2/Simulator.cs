@@ -103,7 +103,7 @@ namespace RVO
             }
         }
 
-        internal ConcurrentDictionary<int, Agent> agents_;
+        public ConcurrentDictionary<int, Agent> agents_;
         internal IList<Obstacle> obstacles_;
         internal KdTree kdTree_;
         internal float timeStep_;
@@ -291,6 +291,16 @@ namespace RVO
             timeStep_ = 0.1f;
 
             SetNumWorkers(0);
+        }
+
+        public void buildAgentTree()
+        {
+            kdTree_.buildAgentTree();
+        }
+        
+        public void doTimeStep()
+        {
+            globalTime_ += timeStep_;
         }
 
         /**

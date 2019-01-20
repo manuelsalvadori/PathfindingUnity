@@ -64,11 +64,36 @@ public class RVOSystem : JobComponentSystem
         }
     }
 
-    public struct doStepJob : IJob
+    public struct BuildTreeJob : IJob
     {
         public void Execute()
         {
-            Simulator.Instance.doStep();
+            Simulator.Instance.buildAgentTree();
+        }
+    }
+    
+    public struct RVOStep : IJobParallelFor
+    {
+        [ReadOnly] [DeallocateOnJobCompletionAttribute]
+        public NativeArray<int> Indexes;
+
+        public void Execute(int i)
+        {
+            var index = Indexes[i];
+            Simulator.Instance.agents_[index].computeNeighbors();
+            Simulator.Instance.agents_[index].computeNewVelocity();
+        }
+    }
+    
+    public struct RVOUpdate : IJobParallelFor
+    {
+        [ReadOnly] [DeallocateOnJobCompletionAttribute]
+        public NativeArray<int> Indexes;
+
+        public void Execute(int i)
+        {
+            var index = Indexes[i];
+            Simulator.Instance.agents_[index].update();
         }
     }
 
@@ -76,7 +101,7 @@ public class RVOSystem : JobComponentSystem
 
     protected override JobHandle OnUpdate(JobHandle inputDeps)
     {
-        var job = new RVOJob
+        var agentsJob = new RVOJob
         {
             Positions = _positions,
             Indexes = new NativeArray<int>(Simulator.Instance.getAgentsKeysArray(), Allocator.TempJob),
@@ -84,12 +109,23 @@ public class RVOSystem : JobComponentSystem
             commands = _rvoBarrier.CreateCommandBuffer().ToConcurrent()
             
         }.Schedule(Simulator.Instance.getNumAgents(), 64, inputDeps);
-        job.Complete();
+        agentsJob.Complete();
 
-        return new doStepJob().Schedule(job);
+        var treeJob = new BuildTreeJob().Schedule(agentsJob);
+        treeJob.Complete();
+
+        var numAgents = Simulator.Instance.getNumAgents();
+
+        var stepJob = new RVOStep{Indexes = new NativeArray<int>(Simulator.Instance.getAgentsKeysArray(), Allocator.TempJob)}.Schedule(numAgents, 64, treeJob);
+        stepJob.Complete();
+
+        var updateJob = new RVOUpdate{Indexes = new NativeArray<int>(Simulator.Instance.getAgentsKeysArray(), Allocator.TempJob)}.Schedule(numAgents, 64, stepJob);
+        updateJob.Complete();
         
+        Simulator.Instance.doTimeStep();
+        return updateJob;
         //Simulator.Instance.doStep();
-        
+
         //return job;
     }
     

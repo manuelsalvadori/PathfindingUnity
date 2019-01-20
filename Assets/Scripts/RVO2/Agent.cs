@@ -39,7 +39,7 @@ namespace RVO
     /**
      * <summary>Defines an agent in the simulation.</summary>
      */
-    internal class Agent
+    public class Agent
     {
         internal IList<KeyValuePair<float, Agent>> agentNeighbors_ = new List<KeyValuePair<float, Agent>>();
         internal IList<KeyValuePair<float, Obstacle>> obstacleNeighbors_ = new List<KeyValuePair<float, Obstacle>>();
@@ -60,7 +60,7 @@ namespace RVO
         /**
          * <summary>Computes the neighbors of this agent.</summary>
          */
-        internal void computeNeighbors()
+        public void computeNeighbors()
         {
             obstacleNeighbors_.Clear();
             float rangeSq = RVOMath.sqr(timeHorizonObst_ * maxSpeed_ + radius_);
@@ -78,7 +78,7 @@ namespace RVO
         /**
          * <summary>Computes the new velocity of this agent.</summary>
          */
-        internal void computeNewVelocity()
+        public void computeNewVelocity()
         {
             orcaLines_.Clear();
 
@@ -496,7 +496,7 @@ namespace RVO
          * <summary>Updates the two-dimensional position and two-dimensional
          * velocity of this agent.</summary>
          */
-        internal void update()
+        public void update()
         {
             velocity_ = newVelocity_;
             position_ += velocity_ * Simulator.Instance.timeStep_;

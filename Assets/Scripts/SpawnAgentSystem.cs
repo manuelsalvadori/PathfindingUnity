@@ -18,7 +18,7 @@ public class SpawnAgentSystem : ComponentSystem
     private EntityManager em;
     private int count;
 
-    public static int maxLimit = 9900;
+    public static int maxLimit = 14900;
     public static int limit = 5000;
     public static int newAgents = 70;
 
@@ -38,7 +38,7 @@ public class SpawnAgentSystem : ComponentSystem
         );
         count = 300;
         
-        agents = new NativeHashMap<int, Entity>(maxLimit + 200, Allocator.Persistent);
+        agents = new NativeHashMap<int, Entity>(maxLimit + 300, Allocator.Persistent);
         
         // RVO2 Init
         Simulator.Instance.setTimeStep(0.25f);
@@ -96,7 +96,4 @@ public class SpawnAgentSystem : ComponentSystem
         agents.Dispose();
         base.OnDestroyManager();
     }
-
-//    private class SASBarrier : BarrierSystem {}
-//    [Inject] private SASBarrier _SASBarrier;
 }
