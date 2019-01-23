@@ -39,7 +39,6 @@ namespace RVO
      */
     internal class Obstacle
     {
-
         internal Obstacle next_;
         internal Obstacle previous_;
         internal float2 direction_;

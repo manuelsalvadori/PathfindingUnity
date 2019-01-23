@@ -20,7 +20,7 @@ public class SpawnAgentSystem : ComponentSystem
 
     public static int maxLimit = 14900;
     public static int limit = 7000;
-    public static int newAgents = 70;
+    public static int newAgents = 50;
 
     public static NativeHashMap<int, Entity> agents;
 
