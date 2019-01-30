@@ -16,6 +16,8 @@ public class Bootstrap
 
     public static EntityArchetype _nodeArchetype;
 
+    public static Settings Settings;
+
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     public static void Init()
     {
@@ -25,7 +27,11 @@ public class Bootstrap
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     public static void InitWithScene()
     {
+        var settingsGO = GameObject.Find("Settings");
+        Settings = settingsGO.GetComponent<Settings>();
+                
         var entityManager = World.Active.GetOrCreateManager<EntityManager>();
+        
         agentLook = GetLook("AgentLook");
         pathLook = GetLook("PathLook");
         openLook = GetLook("openLook");

@@ -40,7 +40,7 @@ public class RVOSystem : JobComponentSystem
                 return;
             }
 
-            var next = GridGenerator.GridToWorldPos(waypoints[agent][l - 1].Value);
+            var next = GridGeneratorSystem.GridToWorldPos(waypoints[agent][l - 1].Value);
             float2 goalVector = next - agentLoc;
 
             if (RVOMath.absSq(goalVector) > 1.0f)
@@ -94,14 +94,20 @@ public class RVOSystem : JobComponentSystem
         }
     }
 
-    [Inject] private ComponentDataFromEntity<Position> _positions;
+    //[Inject] private ComponentDataFromEntity<Position> _positions;
     public static int maxSpeed = 70;
+
+    protected override void OnStartRunning()
+    {
+        base.OnStartRunning();
+        maxSpeed = Bootstrap.Settings.maxAgentSpeed;
+    }
 
     protected override JobHandle OnUpdate(JobHandle inputDeps)
     {
         var agentsJob = new RVOJob
         {
-            Positions = _positions,
+            Positions = GetComponentDataFromEntity<Position>(),
             Indexes = new NativeArray<int>(Simulator.Instance.getAgentsKeysArray(), Allocator.TempJob),
             waypoints = GetBufferFromEntity<Waypoints>(),
             commands = _rvoBarrier.CreateCommandBuffer().ToConcurrent()

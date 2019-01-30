@@ -5,26 +5,28 @@ using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
+using UnityEngine;
 
 public class AStarSystem : JobComponentSystem
 {   
-    //[BurstCompile]
     private struct AStarJob : IJobParallelFor
     {
         [ReadOnly] public EntityCommandBuffer.Concurrent Commands;
         [ReadOnly] public ComponentDataFromEntity<Walkable> Walkables;
-        [ReadOnly] private const int maxLength = 2500;
-        [ReadOnly] private const int maxX = 50;
         [ReadOnly] public AgentGroup AgentGroup;
         [ReadOnly] public int2 gridSize;
+        [ReadOnly] private int _maxLength;
         
         [NativeDisableParallelForRestriction]
         public BufferFromEntity<Waypoints> Waypoints;
         
         public void Execute(int index)
-        {  
-            int2 start = GridGenerator.ClosestNode(AgentGroup.Position[index].Value);
-            int2 goal = GridGenerator.ClosestNode(AgentGroup.Target[index].Value);
+        {
+            _maxLength = gridSize.x * gridSize.y;
+
+            var start = GridGeneratorSystem.ClosestNode(AgentGroup.Position[index].Value);
+            var goal = GridGeneratorSystem.ClosestNode(AgentGroup.Target[index].Value);
+            
             Commands.RemoveComponent<Target>(index, AgentGroup.AgentEntity[index]);
             
             AStarSolver(start, goal, index, AgentGroup.AgentEntity[index]);
@@ -32,12 +34,12 @@ public class AStarSystem : JobComponentSystem
 
         private void AStarSolver(int2 start, int2 goal, int index, Entity agent)
         {
-            var openSet = new NativeMinHeap(maxLength, Allocator.TempJob);
-            var closedSet = new NativeArray<MinHeapNode>(maxLength, Allocator.TempJob);
-            var G_Costs = new NativeArray<int>(maxLength, Allocator.TempJob);
-            var neighbours = new NativeList<int2>(Allocator.TempJob);
+            var openSet    = new NativeMinHeap(_maxLength, Allocator.TempJob);
+            var closedSet  = new NativeArray<MinHeapNode>(_maxLength, Allocator.TempJob);
+            var G_Costs    = new NativeArray<int>(_maxLength, Allocator.TempJob);
+            var neighbours = new NativeList<int2>(8, Allocator.TempJob);
 
-            var startNode = new MinHeapNode(GridGenerator.grid[start.x,start.y], start);
+            var startNode = new MinHeapNode(GridGeneratorSystem.grid[start.x,start.y], start);
                         
             openSet.Push(startNode);
         
@@ -68,7 +70,8 @@ public class AStarSystem : JobComponentSystem
 
                 for (int i = 0; i < neighbours.Length; i++)
                 {
-                    var neighbourEntity = GridGenerator.grid[neighbours[i].x, neighbours[i].y];
+                    var neighbourEntity = GridGeneratorSystem.grid[neighbours[i].x, neighbours[i].y];
+                    
                     if (closedSet[GetIndex(neighbours[i])].IsClosed == 1 || !Walkables[neighbourEntity].Value)
                         continue;
                 
@@ -83,6 +86,7 @@ public class AStarSystem : JobComponentSystem
                         G_Costs[GetIndex(neighbours[i])] = costSoFar;
  
                         var node = new MinHeapNode(neighbourEntity, neighbours[i], currentNode.Position, f, h);
+                        
                         // if openSet contains node => update node
                         openSet.IfContainsRemove(node.NodeEntity);
                         openSet.Push(node);                      
@@ -137,37 +141,24 @@ public class AStarSystem : JobComponentSystem
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int GetIndex(int2 i)
         {
-            return (i.y * maxX) + i.x;
+            return (i.y * gridSize.x) + i.x;
         }
     }
 
     protected override JobHandle OnUpdate(JobHandle inputDeps)
     {
-        JobHandle jh = new AStarJob()
+        return new AStarJob
         {
-            Walkables = _walkable,
+            Walkables = GetComponentDataFromEntity<Walkable>(true),
             Commands = _aStarBarrier.CreateCommandBuffer().ToConcurrent(),
             AgentGroup = _agentGroup,
             Waypoints = GetBufferFromEntity<Waypoints>(),
-            gridSize = new int2(GridGenerator.grid.GetLength(0), GridGenerator.grid.GetLength(1))
+            gridSize = Bootstrap.Settings.gridSize
         }.Schedule(_agentGroup.Length, 1, inputDeps);
-        //jh.Complete();
-        return jh;
     }
 
     private class AStarBarrier : BarrierSystem {}
-
     [Inject] private AStarBarrier _aStarBarrier;
-    
-    private struct GridGroup
-    {
-        [ReadOnly] public ComponentDataArray<Position> Position;
-        [ReadOnly] public ComponentDataArray<Node> Node;
-        [ReadOnly] public ComponentDataArray<Cost> Cost;
-        [ReadOnly] public ComponentDataArray<Walkable> Walkable;
-        [ReadOnly] public EntityArray NodeEntity;
-        public readonly int Length;
-    }
     
     private struct AgentGroup
     {
@@ -178,7 +169,6 @@ public class AStarSystem : JobComponentSystem
         public readonly int Length;
     }
 
-    [Inject] private GridGroup _gridGroup;
     [Inject] private AgentGroup _agentGroup;
-    [Inject] private ComponentDataFromEntity<Walkable> _walkable;
 }
+

@@ -16,16 +16,25 @@ public class SpawnAgentSystem : ComponentSystem
     private EntityArchetype agentArchetype;
     private MeshInstanceRenderer agentLook;
     private EntityManager em;
+    private int2 gridSize;
     private int count;
 
     public static int maxLimit = 14900;
-    public static int limit = 7000;
-    public static int newAgents = 50;
+    public static int limit;
+    public static int newAgents;
 
     public static NativeHashMap<int, Entity> agents;
 
     protected override void OnCreateManager()
     {
+        base.OnCreateManager();
+        agents = new NativeHashMap<int, Entity>(maxLimit + 300, Allocator.Persistent);
+    }
+
+    protected override void OnStartRunning()
+    {
+        base.OnStartRunning();
+
         em = World.Active.GetOrCreateManager<EntityManager>();
 
         agentArchetype = em.CreateArchetype
@@ -37,13 +46,14 @@ public class SpawnAgentSystem : ComponentSystem
             typeof(Waypoints)
         );
         count = 300;
-        
-        agents = new NativeHashMap<int, Entity>(maxLimit + 300, Allocator.Persistent);
-        
+             
         // RVO2 Init
         Simulator.Instance.setTimeStep(0.25f);
         Simulator.Instance.setAgentDefaults(3.0f, 10, 5.0f, 5.0f, 0.1f, 0.12f, new float2(0.0f, 0.0f));
         
+        limit = Bootstrap.Settings.agentsLimit;
+        newAgents = Bootstrap.Settings.newAgents;
+        gridSize = Bootstrap.Settings.gridSize;
     }
 
     protected override void OnUpdate()
@@ -58,16 +68,17 @@ public class SpawnAgentSystem : ComponentSystem
 
         for (int i = 0; i < newAgents/2; i++)
         {
-            var rndY = rnd.NextFloat(-24.9f, 24.9f);
-            var rndY2 = rnd.NextFloat(-24.9f, 24.9f);
+            var y = (gridSize.y / 2) - 0.1f;
+            var rndY = rnd.NextFloat(-y, y);
+            var rndY2 = rnd.NextFloat(-y, y);
             
             var agent = em.CreateEntity(agentArchetype);
             em.SetSharedComponentData(agent, Bootstrap.agentLook);
             
-            var pos = new Position {Value = new float3(-24.6f, 0, rndY)};
+            var pos = new Position {Value = new float3(-y, 0, rndY)};
 
             em.SetComponentData(agent, pos);
-            em.SetComponentData(agent, new Target{Value = new float3(24.6f, 0, rndY2)});
+            em.SetComponentData(agent, new Target{Value = new float3(y, 0, rndY2)});
             
             var index = Simulator.Instance.addAgent(pos.Value.xz);
             agents.TryAdd(index, agent);
@@ -75,16 +86,17 @@ public class SpawnAgentSystem : ComponentSystem
         
         for (int i = 0; i < newAgents/2; i++)
         {
-            var rndX = rnd.NextFloat(-24.9f, 24.9f);
-            var rndX2 = rnd.NextFloat(-24.9f, 24.9f);
+            var x = (gridSize.x / 2) - 0.1f;
+            var rndX = rnd.NextFloat(-x, x);
+            var rndX2 = rnd.NextFloat(-x, x);
             
             var agent = em.CreateEntity(agentArchetype);
             em.SetSharedComponentData(agent, Bootstrap.agentLook);
             
-            var pos = new Position {Value = new float3(rndX, 1, -24.6f)};
+            var pos = new Position {Value = new float3(rndX, 1, -x)};
 
             em.SetComponentData(agent, pos);
-            em.SetComponentData(agent, new Target{Value = new float3(rndX2, 1, 24.6f)});
+            em.SetComponentData(agent, new Target{Value = new float3(rndX2, 1, x)});
             
             var index = Simulator.Instance.addAgent(pos.Value.xz);
             agents.TryAdd(index, agent);

@@ -32,6 +32,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Collections;
 using Unity.Mathematics;
 
 namespace RVO
@@ -417,11 +418,11 @@ namespace RVO
                 orcaLines_.Add(line);
             }
 
-            int lineFail = linearProgram2(orcaLines_, maxSpeed_, prefVelocity_, false, ref newVelocity_);
+            int lineFail = linearProgram2(ref orcaLines_, maxSpeed_, prefVelocity_, false, ref newVelocity_);
 
             if (lineFail < orcaLines_.Count)
             {
-                linearProgram3(orcaLines_, numObstLines, lineFail, maxSpeed_, ref newVelocity_);
+                linearProgram3(ref orcaLines_, numObstLines, lineFail, maxSpeed_, ref newVelocity_);
             }
         }
 
@@ -518,7 +519,7 @@ namespace RVO
          * <param name="result">A reference to the result of the linear program.
          * </param>
          */
-        private bool linearProgram1(IList<Line> lines, int lineNo, float radius, float2 optVelocity, bool directionOpt, ref float2 result)
+        private bool linearProgram1(ref IList<Line> lines, int lineNo, float radius, float2 optVelocity, bool directionOpt, ref float2 result)
         {
             float dotProduct = lines[lineNo].point.x * lines[lineNo].direction.x + lines[lineNo].point.y * lines[lineNo].direction.y;
             float discriminant = RVOMath.sqr(dotProduct) + RVOMath.sqr(radius) - RVOMath.absSq(lines[lineNo].point);
@@ -620,7 +621,7 @@ namespace RVO
          * <param name="result">A reference to the result of the linear program.
          * </param>
          */
-        private int linearProgram2(IList<Line> lines, float radius, float2 optVelocity, bool directionOpt, ref float2 result)
+        private int linearProgram2(ref IList<Line> lines, float radius, float2 optVelocity, bool directionOpt, ref float2 result)
         {
             if (directionOpt)
             {
@@ -647,7 +648,7 @@ namespace RVO
                 {
                     /* Result does not satisfy constraint i. Compute new optimal result. */
                     float2 tempResult = result;
-                    if (!linearProgram1(lines, i, radius, optVelocity, directionOpt, ref result))
+                    if (!linearProgram1(ref lines, i, radius, optVelocity, directionOpt, ref result))
                     {
                         result = tempResult;
 
@@ -671,7 +672,7 @@ namespace RVO
          * <param name="result">A reference to the result of the linear program.
          * </param>
          */
-        private void linearProgram3(IList<Line> lines, int numObstLines, int beginLine, float radius, ref float2 result)
+        private void linearProgram3(ref IList<Line> lines, int numObstLines, int beginLine, float radius, ref float2 result)
         {
             float distance = 0.0f;
 
@@ -716,7 +717,7 @@ namespace RVO
                     }
 
                     float2 tempResult = result;
-                    if (linearProgram2(projLines, radius, new float2(-lines[i].direction.y, lines[i].direction.x), true, ref result) < projLines.Count)
+                    if (linearProgram2(ref projLines, radius, new float2(-lines[i].direction.y, lines[i].direction.x), true, ref result) < projLines.Count)
                     {
                         /*
                          * This should in principle not happen. The result is by

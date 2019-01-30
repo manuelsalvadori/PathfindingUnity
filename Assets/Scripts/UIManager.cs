@@ -8,6 +8,14 @@ public class UIManager : MonoBehaviour
     public Text count;
     public Text maxSpeedT;
 
+    private void Start()
+    {
+        var settings = GameObject.Find("Settings").GetComponent<Settings>();
+        agentsLimit.text = "Agents limit: " + settings.agentsLimit;
+        newAgents.text = "New agents: " + settings.newAgents;
+        maxSpeedT.text = "Max speed: " + settings.maxAgentSpeed;
+    }
+
     private void Update()
     {
         count.text = "Agents count: " + SpawnAgentSystem.agents.Length;

@@ -6,7 +6,6 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Mathematics;
-using UnityEngine;
 
 [NativeContainerSupportsDeallocateOnJobCompletion]
 [NativeContainer]
@@ -45,9 +44,7 @@ public unsafe struct NativeMinHeap : IDisposable
  
         if (size > int.MaxValue)
         {
-            throw new ArgumentOutOfRangeException(
-                nameof(capacity),
-                $"Length * sizeof(T) cannot exceed {int.MaxValue} bytes");
+            throw new ArgumentOutOfRangeException(nameof(capacity), $"Length * sizeof(T) cannot exceed {int.MaxValue} bytes");
         }
  
         this.buffer = UnsafeUtility.Malloc(size, UnsafeUtility.AlignOf<MinHeapNode>(), allocator);
@@ -57,7 +54,7 @@ public unsafe struct NativeMinHeap : IDisposable
         this.length = 0;
  
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-        DisposeSentinel.Create(out this.m_Safety, out this.m_DisposeSentinel, 1, allocator);
+        DisposeSentinel.Create(out m_Safety, out m_DisposeSentinel, 1, allocator);
 #endif
     }
  
@@ -66,41 +63,41 @@ public unsafe struct NativeMinHeap : IDisposable
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
         AtomicSafetyHandle.CheckReadAndThrow(this.m_Safety);
 #endif
-        return this.head >= 0;
+        return head >= 0;
     }
  
     public void Push(MinHeapNode node)
     {
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-        if (this.length == this.capacity)
+        if (length == capacity)
         {
-            throw new IndexOutOfRangeException("Capacity Reached");
+            throw new IndexOutOfRangeException($"Capacity of {capacity} Reached: {length}");
         }
  
         AtomicSafetyHandle.CheckReadAndThrow(this.m_Safety);
 #endif
         if (head < 0)
         {
-            head = this.length;
+            head = length;
         }
-        else if (node.F_Cost < this.Get(head).F_Cost ||
-                 (node.F_Cost == this.Get(head).F_Cost && node.H_Cost < this.Get(head).H_Cost))
+        else if (node.F_Cost < Get(head).F_Cost ||
+                 (node.F_Cost == Get(head).F_Cost && node.H_Cost < Get(head).H_Cost))
         {
             node.Next = head;
             head = length;
         }
         else
         {
-            var currentPtr = this.head;
-            var current = this.Get(head);
+            var currentPtr = head;
+            var current = Get(head);
  
-            while (current.Next >= 0 && this.Get(current.Next).F_Cost <= node.F_Cost)
+            while (current.Next >= 0 && Get(current.Next).F_Cost <= node.F_Cost)
             {
-                if (node.F_Cost == this.Get(current.Next).F_Cost && node.H_Cost < this.Get(current.Next).H_Cost)
+                if (node.F_Cost == Get(current.Next).F_Cost && node.H_Cost < Get(current.Next).H_Cost)
                     break;
                 
                 currentPtr = current.Next;
-                current = this.Get(current.Next);
+                current = Get(current.Next);
             }
  
             node.Next = current.Next;
@@ -215,28 +212,12 @@ public unsafe struct NativeMinHeap : IDisposable
         this.capacity = 0;
     }
  
-    public NativeMinHeap Slice(int start, int length)
-    {
-        var stride = UnsafeUtility.SizeOf<MinHeapNode>();
- 
-        return new NativeMinHeap()
-        {
-            buffer = (byte*) ((IntPtr) this.buffer + stride * start),
-            capacity = length,
-            length = 0,
-            head = -1,
-#if ENABLE_UNITY_COLLECTIONS_CHECKS
-            m_Safety = this.m_Safety,
-#endif
-        };
-    }
- 
     private MinHeapNode Get(int index)
     {
         #if ENABLE_UNITY_COLLECTIONS_CHECKS
         if (index < 0 || index >= this.length)
         {
-            this.FailOutOfRangeError(index);
+            this.OutOfRangeError(index);
         }
  
         AtomicSafetyHandle.CheckReadAndThrow(this.m_Safety);
@@ -246,13 +227,13 @@ public unsafe struct NativeMinHeap : IDisposable
     }
  
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-    private void FailOutOfRangeError(int index)
+    private void OutOfRangeError(int index)
     {
-        throw new IndexOutOfRangeException($"Index {index} is out of range of '{this.capacity}' Length.");
+        throw new IndexOutOfRangeException($"Index {index} is out of range of '{this.capacity}' range.");
     }
 #endif
 }
- 
+
 public struct MinHeapNode
 {
     public MinHeapNode(Entity nodeEntity, int2 position, int2 parentPosition, int fCost = 0, int hCost = 0)

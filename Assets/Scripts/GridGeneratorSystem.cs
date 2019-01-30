@@ -5,20 +5,25 @@ using Unity.Mathematics;
 using Unity.Rendering;
 using Unity.Transforms;
 using UnityEngine;
+using Unity.Collections;
 
-public class GridGenerator : JobComponentSystem
+
+public class GridGeneratorSystem : JobComponentSystem
 {
-    public static int2 s_gridSize = new int2(50, 50);
+    [ReadOnly] public static int2 s_gridSize;
     private static float nodeSize = 1;
     public static Entity[,] grid;
+    
     private MeshInstanceRenderer unwalkableLook;
     public static MeshInstanceRenderer nodeLook;
+    
     private EntityManager entityManager;
 
     protected override void OnStartRunning()
     {
         base.OnStartRunning();
-
+        
+        s_gridSize = Bootstrap.Settings.gridSize;
         grid = new Entity[s_gridSize.x,s_gridSize.y];
         
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
@@ -59,10 +64,10 @@ public class GridGenerator : JobComponentSystem
             var go = obst.gameObject;
             var center = new float2(go.transform.position.x, go.transform.position.z);
             var vertices = new List<float2>();
-            vertices.Add(center + new float2(-go.transform.localScale.x, -go.transform.localScale.z) * 0.5f);
-            vertices.Add(center + new float2(go.transform.localScale.x, -go.transform.localScale.z) * 0.5f);
-            vertices.Add(center + new float2(go.transform.localScale.x, go.transform.localScale.z) * 0.5f);
-            vertices.Add(center + new float2(-go.transform.localScale.x, go.transform.localScale.z) * 0.5f);
+            vertices.Add(center + new float2(-go.transform.lossyScale.x, -go.transform.lossyScale.z) * 0.5f);
+            vertices.Add(center + new float2(go.transform.lossyScale.x, -go.transform.lossyScale.z) * 0.5f);
+            vertices.Add(center + new float2(go.transform.lossyScale.x, go.transform.lossyScale.z) * 0.5f);
+            vertices.Add(center + new float2(-go.transform.lossyScale.x, go.transform.lossyScale.z) * 0.5f);
 
             Simulator.Instance.addObstacle(vertices);
         }
@@ -72,7 +77,7 @@ public class GridGenerator : JobComponentSystem
     public static int2 ClosestNode(float3 pos)
     {
         //return new int2(math.clamp(Mathf.FloorToInt(pos.x), 0 , 49), math.clamp(Mathf.FloorToInt(pos.z), 0 , 49));
-        return new int2(math.clamp(Mathf.FloorToInt(pos.x) + 25, 0 , 49), math.clamp(Mathf.FloorToInt(pos.z) + 25, 0 , 49));
+        return new int2(math.clamp(Mathf.FloorToInt(pos.x) + s_gridSize.x/2, 0 , s_gridSize.x), math.clamp(Mathf.FloorToInt(pos.z) + s_gridSize.y/2, 0 , s_gridSize.y));
     }
     
     public static float2 GridToWorldPos(int2 coord)

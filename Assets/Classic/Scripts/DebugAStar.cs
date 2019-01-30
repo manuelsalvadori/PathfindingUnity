@@ -20,7 +20,7 @@ public unsafe class DebugAStar : MonoBehaviour
         em = World.Active.GetOrCreateManager<EntityManager>();
         openLook = Bootstrap.GetLook("openLook");
         closedLook = Bootstrap.GetLook("ClosedLook");
-        start = GridGenerator.ClosestNode(new float3(-24.6f, 1, -24.6f));
+        start = GridGeneratorSystem.ClosestNode(new float3(-24.6f, 1, -24.6f));
         
         
         var mh = new NativeMinHeap(5, Allocator.Temp);
@@ -58,7 +58,7 @@ public unsafe class DebugAStar : MonoBehaviour
         var G_Costs = new NativeArray<int>(maxLength, Allocator.Persistent);
         var neighbours = new NativeList<int2>(Allocator.Persistent);
 
-        var startNode = new MinHeapNode(GridGenerator.grid[start.x,start.y], start);
+        var startNode = new MinHeapNode(GridGeneratorSystem.grid[start.x,start.y], start);
                         
         openSet.Push(startNode);
         var c = 0;
@@ -94,13 +94,13 @@ public unsafe class DebugAStar : MonoBehaviour
 
             for (int i = 0; i < neighbours.Length; i++)
             {                
-                var neighbourEntity = GridGenerator.grid[neighbours[i].x, neighbours[i].y];
+                var neighbourEntity = GridGeneratorSystem.grid[neighbours[i].x, neighbours[i].y];
                 if (closedSet[GetIndex(neighbours[i])].IsClosed == 1 || !em.GetComponentData<Walkable>(neighbourEntity).Value)
                     continue;
                 
                 int costSoFar = G_Costs[GetIndex(currentNode.Position)] + Heuristics.OctileDistance(currentNode.Position, neighbours[i]);
 
-                em.SetSharedComponentData(GridGenerator.grid[neighbours[i].x,neighbours[i].y], Bootstrap.openLook);
+                em.SetSharedComponentData(GridGeneratorSystem.grid[neighbours[i].x,neighbours[i].y], Bootstrap.openLook);
 
                 if (G_Costs[GetIndex(neighbours[i])] == 0 || costSoFar < G_Costs[GetIndex(neighbours[i])])
                 {

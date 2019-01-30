@@ -41,7 +41,7 @@ public class DebugCosts : MonoBehaviour
         var G_Costs = new NativeArray<int>(maxLength, Allocator.TempJob);
         var neighbours = new NativeList<int2>(Allocator.TempJob);
             
-        var startNode = new MinHeapNode(GridGenerator.grid[start.x,start.y], start.x, start.y);
+        var startNode = new MinHeapNode(GridGeneratorSystem.grid[start.x,start.y], start.x, start.y);
         openSet.Push(startNode);
         
         while (openSet.HasNext())
@@ -82,7 +82,7 @@ public class DebugCosts : MonoBehaviour
                 
                 int costSoFar = G_Costs[GetIndex(currentNode.Position)] + Heuristics.OctileDistance(currentNode.Position, neighbours[i]);
 
-                em.SetSharedComponentData(GridGenerator.grid[neighbours[i].x,neighbours[i].y], openLook);
+                em.SetSharedComponentData(GridGeneratorSystem.grid[neighbours[i].x,neighbours[i].y], openLook);
 
                 if (G_Costs[GetIndex(neighbours[i])] == 0 || costSoFar < G_Costs[GetIndex(neighbours[i])])
                 {
@@ -93,7 +93,7 @@ public class DebugCosts : MonoBehaviour
                     
                     G_Costs[GetIndex(neighbours[i])] = g;
  
-                    var node = new MinHeapNode(GridGenerator.grid[neighbours[i].x,neighbours[i].y], neighbours[i], currentNode.Position, f, h);
+                    var node = new MinHeapNode(GridGeneratorSystem.grid[neighbours[i].x,neighbours[i].y], neighbours[i], currentNode.Position, f, h);
                     openSet.Push(node);
                 }
             }
@@ -117,9 +117,9 @@ public class DebugCosts : MonoBehaviour
                     continue;
 
                 var checkY = coords.y + y;
-                if (checkX >= 0 && checkX < GridGenerator.grid.GetLength(0) && checkY >= 0 && checkY < GridGenerator.grid.GetLength(1))
+                if (checkX >= 0 && checkX < GridGeneratorSystem.grid.GetLength(0) && checkY >= 0 && checkY < GridGeneratorSystem.grid.GetLength(1))
                 {
-                    Entity checkNode = GridGenerator.grid[coords.x + x, coords.y + y];
+                    Entity checkNode = GridGeneratorSystem.grid[coords.x + x, coords.y + y];
                     if(em.GetComponentData<Walkable>(checkNode).Value)
                     {
                         neighbours.Add(new int2(checkX,checkY));
