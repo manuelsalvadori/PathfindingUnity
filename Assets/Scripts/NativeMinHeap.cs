@@ -47,15 +47,31 @@ public unsafe struct NativeMinHeap : IDisposable
             throw new ArgumentOutOfRangeException(nameof(capacity), $"Length * sizeof(T) cannot exceed {int.MaxValue} bytes");
         }
  
-        this.buffer = UnsafeUtility.Malloc(size, UnsafeUtility.AlignOf<MinHeapNode>(), allocator);
+        buffer = UnsafeUtility.Malloc(size, UnsafeUtility.AlignOf<MinHeapNode>(), allocator);
         this.capacity = capacity;
         this.allocator = allocator;
-        this.head = -1;
-        this.length = 0;
+        head = -1;
+        length = 0;
  
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
         DisposeSentinel.Create(out m_Safety, out m_DisposeSentinel, 1, allocator);
 #endif
+    }
+    
+    public NativeMinHeap Slice(int start, int length)
+    {
+        var stride = UnsafeUtility.SizeOf<MinHeapNode>();
+ 
+        return new NativeMinHeap
+        {
+            buffer = (byte*) ((IntPtr) buffer + stride * start),
+            capacity = length,
+            length = 0,
+            head = -1,
+#if ENABLE_UNITY_COLLECTIONS_CHECKS
+            m_Safety = this.m_Safety,
+#endif
+        };
     }
  
     public bool HasNext()
