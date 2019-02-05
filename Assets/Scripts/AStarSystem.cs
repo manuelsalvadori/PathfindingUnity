@@ -19,10 +19,6 @@ public class AStarSystem : JobComponentSystem
         [ReadOnly] public int _maxLength;
         [ReadOnly] public int _maxAgents;
         
-        [NativeDisableParallelForRestriction] public NativeMinHeap OpenSet;
-        [NativeDisableParallelForRestriction] public NativeArray<MinHeapNode> ClosedSet;
-        [NativeDisableParallelForRestriction] public NativeArray<int> Gcosts;
-        
         [NativeDisableParallelForRestriction] public BufferFromEntity<Waypoints> Waypoints;
         
         public void Execute(int index)
@@ -35,20 +31,12 @@ public class AStarSystem : JobComponentSystem
             AStarSolver(start, goal, index, AgentGroup.AgentEntity[index]);
         }
 
-        private unsafe void AStarSolver(int2 start, int2 goal, int index, Entity agent)
+        private void AStarSolver(int2 start, int2 goal, int index, Entity agent)
         {
-            var openSet    = OpenSet.Slice(index * _maxLength, _maxLength);
-            var closedSet  = ClosedSet.Slice(index * _maxLength, _maxLength);
-            var G_Costs    = Gcosts.Slice(index * _maxLength, _maxLength);
+            var openSet    = new NativeMinHeap(_maxLength, Allocator.TempJob);
+            var closedSet  = new NativeArray<MinHeapNode>(_maxLength, Allocator.TempJob);
+            var G_Costs    = new NativeArray<int>(_maxLength, Allocator.TempJob);
             var neighbours = new NativeList<int2>(8, Allocator.TempJob);
-            
-            openSet.Clear();
-            
-            void* buffer = closedSet.GetUnsafePtr();
-            UnsafeUtility.MemClear(buffer, (long)closedSet.Length * UnsafeUtility.SizeOf<MinHeapNode>());
-            
-            buffer = G_Costs.GetUnsafePtr();
-            UnsafeUtility.MemClear(buffer, (long)G_Costs.Length * UnsafeUtility.SizeOf<int>());
 
             var startNode = new MinHeapNode(GridGeneratorSystem.grid[start.x,start.y], start);
                         
@@ -104,6 +92,9 @@ public class AStarSystem : JobComponentSystem
                     }
                 }    
             }
+            openSet.Dispose();
+            closedSet .Dispose();
+            G_Costs.Dispose();   
             neighbours.Dispose();
         }
 
@@ -153,43 +144,16 @@ public class AStarSystem : JobComponentSystem
         }
     }
 
-    private NativeMinHeap OpenSet;
-    private NativeArray<MinHeapNode> ClosedSet;
-    private NativeArray<int> Gcosts;
-    private int MaxLenght;
-    private int MaxAgents;
-    
-
-    protected override void OnCreateManager()
-    {
-        MaxLenght = 2500;
-        MaxAgents = SpawnAgentSystem.maxLimit + 300;
-        
-        OpenSet    = new NativeMinHeap(MaxLenght * MaxAgents, Allocator.Persistent);
-        ClosedSet  = new NativeArray<MinHeapNode>(MaxLenght * MaxAgents, Allocator.Persistent);
-        Gcosts     = new NativeArray<int>(MaxLenght * MaxAgents, Allocator.Persistent);
-    }
-
-    protected override void OnDestroyManager()
-    {
-        OpenSet.Dispose(); 
-        ClosedSet.Dispose();
-        Gcosts.Dispose();
-    }
-
     protected override JobHandle OnUpdate(JobHandle inputDeps)
     {
         return new AStarJob
         {
             Walkables = GetComponentDataFromEntity<Walkable>(true),
-            OpenSet = OpenSet,
-            ClosedSet = ClosedSet,
-            Gcosts = Gcosts,
             Commands = _aStarBarrier.CreateCommandBuffer().ToConcurrent(),
             AgentGroup = _agentGroup,
             Waypoints = GetBufferFromEntity<Waypoints>(),
             gridSize = Bootstrap.Settings.gridSize,
-            _maxLength = MaxLenght
+            _maxLength = Bootstrap.Settings.gridSize.x * Bootstrap.Settings.gridSize.y
         }.Schedule(_agentGroup.Length, 1, inputDeps);
     }
 

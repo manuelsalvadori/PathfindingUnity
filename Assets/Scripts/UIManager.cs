@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Unity.Entities;
+using UnityEngine;
 using UnityEngine.UI;
 
 public class UIManager : MonoBehaviour
@@ -23,28 +24,66 @@ public class UIManager : MonoBehaviour
 
     public void incrementLimit()
     {
-        if (SpawnAgentSystem.limit > SpawnAgentSystem.maxLimit)
-            return;
-        SpawnAgentSystem.limit += 100;
-        agentsLimit.text = "Agents limit: " + SpawnAgentSystem.limit;
+        if(World.Active.GetExistingManager<SpawnAgentSystem>().Enabled)
+        {
+            if (SpawnAgentSystem.limit > SpawnAgentSystem.maxLimit)
+                return;
+            SpawnAgentSystem.limit += 100;
+            agentsLimit.text = "Agents limit: " + SpawnAgentSystem.limit;
+        }
+        else
+        {
+            if (Bootstrap.Settings.agentsLimit > 19900)
+                return;
+            Bootstrap.Settings.agentsLimit += 100;
+            agentsLimit.text = "Agents limit: " + Bootstrap.Settings.agentsLimit;
+        }
     }
     
     public void decrementLimit()
     {
-        SpawnAgentSystem.limit -= 100;
-        agentsLimit.text = "Agents limit: " + SpawnAgentSystem.limit;
+        if (World.Active.GetExistingManager<SpawnAgentSystem>().Enabled)
+        {
+            if (Bootstrap.Settings.agentsLimit == 0)
+                return;
+            SpawnAgentSystem.limit -= 100;
+            agentsLimit.text = "Agents limit: " + SpawnAgentSystem.limit;
+        }
+        else
+        {
+            if (Bootstrap.Settings.agentsLimit == 0)
+                return;
+            Bootstrap.Settings.agentsLimit -= 100;
+            agentsLimit.text = "Agents limit: " + Bootstrap.Settings.agentsLimit;
+        }
     }
     
     public void incrementNewAgents()
     {
-        SpawnAgentSystem.newAgents += 2;
-        newAgents.text = "New agents: " + SpawnAgentSystem.newAgents;
+        if (World.Active.GetExistingManager<SpawnAgentSystem>().Enabled)
+        {
+            SpawnAgentSystem.newAgents += 2;
+            newAgents.text = "New agents: " + SpawnAgentSystem.newAgents;
+        }
+        else
+        {
+            Bootstrap.Settings.newAgents += 2;
+            newAgents.text = "New agents: " + Bootstrap.Settings.newAgents;
+        }
     }
     
     public void decrementNewAgents()
     {
-        SpawnAgentSystem.newAgents -= 2;
-        newAgents.text = "New agents: " + SpawnAgentSystem.newAgents;
+        if (World.Active.GetExistingManager<SpawnAgentSystem>().Enabled)
+        {
+            SpawnAgentSystem.newAgents -= 2;
+            newAgents.text = "New agents: " + SpawnAgentSystem.newAgents;
+        }
+        else
+        {
+            Bootstrap.Settings.newAgents -= 2;
+            newAgents.text = "New agents: " + Bootstrap.Settings.newAgents;
+        }
     }
     
     public void incrementMaxSpeed()
@@ -57,5 +96,10 @@ public class UIManager : MonoBehaviour
     {
         RVOSystem.maxSpeed --;
         maxSpeedT.text = "Max speed: " + RVOSystem.maxSpeed;
-    } 
+    }
+
+    public void startSimulation()
+    {
+        World.Active.GetExistingManager<SpawnAgentSystem>().Enabled = !World.Active.GetExistingManager<SpawnAgentSystem>().Enabled;
+    }
 }

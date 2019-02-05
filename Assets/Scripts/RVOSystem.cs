@@ -32,14 +32,6 @@ public class RVOSystem : JobComponentSystem
 
             int l = waypoints[agent].Length;
             
-            if (l == 0)
-            {
-                commands.DestroyEntity(i, agent);
-                SpawnAgentSystem.agents.Remove(index);
-                Simulator.Instance.removeAgent(index);
-                return;
-            }
-
             var next = GridGeneratorSystem.GridToWorldPos(waypoints[agent][l - 1].Value);
             float2 goalVector = next - agentLoc;
 
@@ -57,7 +49,7 @@ public class RVOSystem : JobComponentSystem
             var dir = next - agentLoc;
             
             // remove waypoint
-            if(dir.x < 0.1f && dir.y < 0.1f)
+            if(dir.x < 0.1f && dir.y < 0.1f && l > 1)
                 waypoints[agent].RemoveAt(l - 1);
         }
     }
@@ -96,6 +88,11 @@ public class RVOSystem : JobComponentSystem
 
     //[Inject] private ComponentDataFromEntity<Position> _positions;
     public static int maxSpeed = 70;
+    
+    protected override void OnCreateManager()
+    {
+        Enabled = false;
+    }
 
     protected override void OnStartRunning()
     {
