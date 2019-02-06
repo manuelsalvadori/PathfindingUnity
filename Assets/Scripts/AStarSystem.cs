@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -26,7 +27,7 @@ public class AStarSystem : JobComponentSystem
             var start = GridGeneratorSystem.ClosestNode(AgentGroup.Position[index].Value);
             var goal = GridGeneratorSystem.ClosestNode(AgentGroup.Target[index].Value);
             
-            Commands.RemoveComponent<Target>(index, AgentGroup.AgentEntity[index]);
+            Commands.RemoveComponent<ToProcess>(index, AgentGroup.AgentEntity[index]);
             
             AStarSolver(start, goal, index, AgentGroup.AgentEntity[index]);
         }
@@ -144,9 +145,12 @@ public class AStarSystem : JobComponentSystem
         }
     }
 
+    public static double elapsed = 0;
     protected override JobHandle OnUpdate(JobHandle inputDeps)
     {
-        return new AStarJob
+        Stopwatch sw = new Stopwatch();
+        sw.Start();
+        var job = new AStarJob
         {
             Walkables = GetComponentDataFromEntity<Walkable>(true),
             Commands = _aStarBarrier.CreateCommandBuffer().ToConcurrent(),
@@ -155,6 +159,10 @@ public class AStarSystem : JobComponentSystem
             gridSize = Bootstrap.Settings.gridSize,
             _maxLength = Bootstrap.Settings.gridSize.x * Bootstrap.Settings.gridSize.y
         }.Schedule(_agentGroup.Length, 1, inputDeps);
+        job.Complete();
+        sw.Stop();
+        elapsed = sw.Elapsed.TotalMilliseconds;
+        return job;
     }
 
     private class AStarBarrier : BarrierSystem {}
@@ -164,6 +172,7 @@ public class AStarSystem : JobComponentSystem
     {
         [ReadOnly] public ComponentDataArray<Position> Position;
         [ReadOnly] public ComponentDataArray<Agent> Agent;
+        [ReadOnly] public ComponentDataArray<ToProcess> ToProcess;
         [ReadOnly] public ComponentDataArray<Target> Target;
         [ReadOnly] public EntityArray AgentEntity;
         public readonly int Length;

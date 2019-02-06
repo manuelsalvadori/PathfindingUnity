@@ -1,4 +1,7 @@
-﻿using Unity.Entities;
+﻿using System.Collections.Generic;
+using System.IO;
+using Tayx.Graphy;
+using Unity.Entities;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -8,6 +11,8 @@ public class UIManager : MonoBehaviour
     public Text newAgents;
     public Text count;
     public Text maxSpeedT;
+    private List<KeyValuePair<float,double>> fps;
+    private bool start = false;
 
     private void Start()
     {
@@ -15,11 +20,29 @@ public class UIManager : MonoBehaviour
         agentsLimit.text = "Agents limit: " + settings.agentsLimit;
         newAgents.text = "New agents: " + settings.newAgents;
         maxSpeedT.text = "Max speed: " + settings.maxAgentSpeed;
+        fps = new List<KeyValuePair<float, double>>();
     }
 
     private void Update()
     {
+        if(start)
+            fps.Add(new KeyValuePair<float, double>(Time.time, AStarSystem.elapsed));
+            //fps.Add(new KeyValuePair<float, float>(Time.time, GraphyManager.Instance.CurrentFPS));
         count.text = "Agents count: " + SpawnAgentSystem.agents.Length;
+    }
+
+    public void saveData()
+    {
+        
+        string path = $"{Application.persistentDataPath}/fpsdataECS {SpawnAgentSystem.newAgents}_{SpawnAgentSystem.limit}.txt";
+        
+        StreamWriter writer = new StreamWriter(path, true);
+
+        foreach (var pair in fps)
+        {
+            writer.WriteLine($"{pair.Key} {pair.Value}");
+        }
+        writer.Close();
     }
 
     public void incrementLimit()
@@ -28,14 +51,14 @@ public class UIManager : MonoBehaviour
         {
             if (SpawnAgentSystem.limit > SpawnAgentSystem.maxLimit)
                 return;
-            SpawnAgentSystem.limit += 100;
+            SpawnAgentSystem.limit += 5000;
             agentsLimit.text = "Agents limit: " + SpawnAgentSystem.limit;
         }
         else
         {
             if (Bootstrap.Settings.agentsLimit > 19900)
                 return;
-            Bootstrap.Settings.agentsLimit += 100;
+            Bootstrap.Settings.agentsLimit += 5000;
             agentsLimit.text = "Agents limit: " + Bootstrap.Settings.agentsLimit;
         }
     }
@@ -46,14 +69,14 @@ public class UIManager : MonoBehaviour
         {
             if (Bootstrap.Settings.agentsLimit == 0)
                 return;
-            SpawnAgentSystem.limit -= 100;
+            SpawnAgentSystem.limit -= 5000;
             agentsLimit.text = "Agents limit: " + SpawnAgentSystem.limit;
         }
         else
         {
             if (Bootstrap.Settings.agentsLimit == 0)
                 return;
-            Bootstrap.Settings.agentsLimit -= 100;
+            Bootstrap.Settings.agentsLimit -= 5000;
             agentsLimit.text = "Agents limit: " + Bootstrap.Settings.agentsLimit;
         }
     }
@@ -62,12 +85,12 @@ public class UIManager : MonoBehaviour
     {
         if (World.Active.GetExistingManager<SpawnAgentSystem>().Enabled)
         {
-            SpawnAgentSystem.newAgents += 2;
+            SpawnAgentSystem.newAgents += 100;
             newAgents.text = "New agents: " + SpawnAgentSystem.newAgents;
         }
         else
         {
-            Bootstrap.Settings.newAgents += 2;
+            Bootstrap.Settings.newAgents += 100;
             newAgents.text = "New agents: " + Bootstrap.Settings.newAgents;
         }
     }
@@ -76,12 +99,12 @@ public class UIManager : MonoBehaviour
     {
         if (World.Active.GetExistingManager<SpawnAgentSystem>().Enabled)
         {
-            SpawnAgentSystem.newAgents -= 2;
+            SpawnAgentSystem.newAgents -= 100;
             newAgents.text = "New agents: " + SpawnAgentSystem.newAgents;
         }
         else
         {
-            Bootstrap.Settings.newAgents -= 2;
+            Bootstrap.Settings.newAgents -= 100;
             newAgents.text = "New agents: " + Bootstrap.Settings.newAgents;
         }
     }
@@ -100,6 +123,7 @@ public class UIManager : MonoBehaviour
 
     public void startSimulation()
     {
+        start = true;
         World.Active.GetExistingManager<SpawnAgentSystem>().Enabled = !World.Active.GetExistingManager<SpawnAgentSystem>().Enabled;
     }
 }

@@ -16,8 +16,9 @@ public class RVOSystem : JobComponentSystem
         
         [NativeDisableParallelForRestriction]
         public BufferFromEntity<Waypoints> waypoints;
-        
-        public EntityCommandBuffer.Concurrent commands;
+
+        [ReadOnly]
+        public ComponentDataFromEntity<Target> Targets;
         
         [ReadOnly]
         [DeallocateOnJobCompletionAttribute]
@@ -31,8 +32,13 @@ public class RVOSystem : JobComponentSystem
             SpawnAgentSystem.agents.TryGetValue(index, out var agent);
 
             int l = waypoints[agent].Length;
+
+            float2 next;
+            if (l == 0)
+                next = Targets[agent].Value.xz;
+            else
+                next = GridGeneratorSystem.GridToWorldPos(waypoints[agent][l - 1].Value);
             
-            var next = GridGeneratorSystem.GridToWorldPos(waypoints[agent][l - 1].Value);
             float2 goalVector = next - agentLoc;
 
             if (RVOMath.absSq(goalVector) > 1.0f)
@@ -49,7 +55,7 @@ public class RVOSystem : JobComponentSystem
             var dir = next - agentLoc;
             
             // remove waypoint
-            if(dir.x < 0.1f && dir.y < 0.1f && l > 1)
+            if(dir.x < 0.1f && dir.y < 0.1f && l > 0)
                 waypoints[agent].RemoveAt(l - 1);
         }
     }
@@ -107,7 +113,7 @@ public class RVOSystem : JobComponentSystem
             Positions = GetComponentDataFromEntity<Position>(),
             Indexes = new NativeArray<int>(Simulator.Instance.getAgentsKeysArray(), Allocator.TempJob),
             waypoints = GetBufferFromEntity<Waypoints>(),
-            commands = _rvoBarrier.CreateCommandBuffer().ToConcurrent()
+            Targets = GetComponentDataFromEntity<Target>()
             
         }.Schedule(Simulator.Instance.getNumAgents(), 64, inputDeps);
         agentsJob.Complete();
@@ -129,7 +135,4 @@ public class RVOSystem : JobComponentSystem
         Simulator.Instance.doTimeStep();
         return updateJob;
     }
-    
-    private class RVOBarrier : BarrierSystem {}
-    [Inject] private RVOBarrier _rvoBarrier;
 }

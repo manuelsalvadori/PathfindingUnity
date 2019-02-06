@@ -3,6 +3,8 @@ using Unity.Mathematics;
 
 public struct Agent : IComponentData {}
 
+public struct ToProcess : IComponentData {}
+
 public struct Target : IComponentData
 {
     public float3 Value;

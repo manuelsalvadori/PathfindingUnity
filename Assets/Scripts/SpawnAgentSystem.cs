@@ -16,10 +16,10 @@ public class SpawnAgentSystem : ComponentSystem
     private EntityArchetype agentArchetype;
     private MeshInstanceRenderer agentLook;
     private EntityManager em;
-    private int2 gridSize;
     private int count;
     private float currentx = -24.9f;
     private float currenty = -24.9f;
+    private float delta = 0.19f;
 
     public static int maxLimit = 19900;
     public static int limit;
@@ -29,8 +29,8 @@ public class SpawnAgentSystem : ComponentSystem
 
     protected override void OnCreateManager()
     {
-        base.OnCreateManager();
         agents = new NativeHashMap<int, Entity>(maxLimit + 300, Allocator.Persistent);
+        
         em = World.Active.GetOrCreateManager<EntityManager>();
         
         agentArchetype = em.CreateArchetype
@@ -47,23 +47,18 @@ public class SpawnAgentSystem : ComponentSystem
 
     protected override void OnStartRunning()
     {
-        base.OnStartRunning();
-
-        count = 300;
-             
         // RVO2 Init
         Simulator.Instance.setTimeStep(0.25f);
         Simulator.Instance.setAgentDefaults(3.0f, 10, 5.0f, 5.0f, 0.035f, 0.12f, new float2(0.0f, 0.0f));
         
         limit = Bootstrap.Settings.agentsLimit;
         newAgents = Bootstrap.Settings.newAgents;
-        gridSize = Bootstrap.Settings.gridSize;
+
+        delta = delta * 20000f / limit;
     }
 
     protected override void OnUpdate()
     {
-        count++;
-
         if (agents.Length >= limit)
         {
             World.Active.GetExistingManager<RVOSystem>().Enabled = true;
@@ -73,14 +68,8 @@ public class SpawnAgentSystem : ComponentSystem
         if (limit - agents.Length < newAgents)
             newAgents = limit - agents.Length;
 
-        count = 0;
-        Random rnd = new Random((uint)(Time.time*10)+1);
-
         for (int i = 0; i < newAgents; i++)
-        {
-            var y = (gridSize.y / 2) - 0.1f;
-            var rndY2 = rnd.NextFloat(-y, y);
-            
+        {            
             var agent = em.CreateEntity(agentArchetype);
             em.SetSharedComponentData(agent, Bootstrap.agentLook);
             
@@ -90,11 +79,11 @@ public class SpawnAgentSystem : ComponentSystem
             em.SetComponentData(agent, pos);
             em.SetComponentData(agent, tar);
             
-            currenty += 0.19f;
+            currenty += delta;
             if (currenty >= 24.9f)
             {
                 currenty = -24.9f;
-                currentx += 0.19f;
+                currentx += 0.2f;
             }
             
             var index = Simulator.Instance.addAgent(pos.Value.xz);
