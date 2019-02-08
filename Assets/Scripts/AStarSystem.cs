@@ -1,13 +1,14 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Runtime.CompilerServices;
-using Unity.Burst;
 using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 public class AStarSystem : JobComponentSystem
 {   
@@ -145,11 +146,13 @@ public class AStarSystem : JobComponentSystem
         }
     }
 
-    public static double elapsed = 0;
+//    private List<KeyValuePair<float, double>> times = new List<KeyValuePair<float, double>>();
+
     protected override JobHandle OnUpdate(JobHandle inputDeps)
     {
-        Stopwatch sw = new Stopwatch();
-        sw.Start();
+//        Stopwatch sw = new Stopwatch();
+//        sw.Start();
+        
         var job = new AStarJob
         {
             Walkables = GetComponentDataFromEntity<Walkable>(true),
@@ -159,11 +162,25 @@ public class AStarSystem : JobComponentSystem
             gridSize = Bootstrap.Settings.gridSize,
             _maxLength = Bootstrap.Settings.gridSize.x * Bootstrap.Settings.gridSize.y
         }.Schedule(_agentGroup.Length, 1, inputDeps);
-        job.Complete();
-        sw.Stop();
-        elapsed = sw.Elapsed.TotalMilliseconds;
+//        job.Complete();
+        
+//        sw.Stop();
+//        times.Add(new KeyValuePair<float, double>(Time.time, sw.Elapsed.TotalMilliseconds));
         return job;
     }
+
+//    protected override void OnDestroyManager()
+//    {
+//        string path = $"{Application.persistentDataPath}/aStarDataECS.txt";
+//        
+//        StreamWriter writer = new StreamWriter(path, true);
+//
+//        foreach (var pair in times)
+//        {
+//            writer.WriteLine($"{pair.Key} {pair.Value}");
+//        }
+//        writer.Close();
+//    }
 
     private class AStarBarrier : BarrierSystem {}
     [Inject] private AStarBarrier _aStarBarrier;

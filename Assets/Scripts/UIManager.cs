@@ -11,7 +11,7 @@ public class UIManager : MonoBehaviour
     public Text newAgents;
     public Text count;
     public Text maxSpeedT;
-    private List<KeyValuePair<float,double>> fps;
+    private List<KeyValuePair<float,float>> fps;
     private bool start = false;
 
     private void Start()
@@ -20,20 +20,18 @@ public class UIManager : MonoBehaviour
         agentsLimit.text = "Agents limit: " + settings.agentsLimit;
         newAgents.text = "New agents: " + settings.newAgents;
         maxSpeedT.text = "Max speed: " + settings.maxAgentSpeed;
-        fps = new List<KeyValuePair<float, double>>();
+        fps = new List<KeyValuePair<float, float>>();
     }
 
     private void Update()
     {
         if(start)
-            fps.Add(new KeyValuePair<float, double>(Time.time, AStarSystem.elapsed));
-            //fps.Add(new KeyValuePair<float, float>(Time.time, GraphyManager.Instance.CurrentFPS));
+            fps.Add(new KeyValuePair<float, float>(Time.time, GraphyManager.Instance.CurrentFPS));
         count.text = "Agents count: " + SpawnAgentSystem.agents.Length;
     }
 
     public void saveData()
     {
-        
         string path = $"{Application.persistentDataPath}/fpsdataECS {SpawnAgentSystem.newAgents}_{SpawnAgentSystem.limit}.txt";
         
         StreamWriter writer = new StreamWriter(path, true);

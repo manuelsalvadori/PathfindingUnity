@@ -39,6 +39,7 @@ public class SpawnAgentSystem : ComponentSystem
             typeof(MeshInstanceRenderer),
             typeof(Agent),
             typeof(Target),
+            typeof(ToProcess),
             typeof(Waypoints)
         );
         
