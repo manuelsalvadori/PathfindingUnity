@@ -20,8 +20,6 @@ public class SpawnAgentSystem : ComponentSystem
     private int count;
 
     public static int maxLimit = 14900;
-    public static int limit;
-    public static int newAgents;
 
     public static NativeHashMap<int, Entity> agents;
 
@@ -29,6 +27,7 @@ public class SpawnAgentSystem : ComponentSystem
     {
         base.OnCreateManager();
         agents = new NativeHashMap<int, Entity>(maxLimit + 300, Allocator.Persistent);
+        Enabled = false;
     }
 
     protected override void OnStartRunning()
@@ -51,8 +50,6 @@ public class SpawnAgentSystem : ComponentSystem
         Simulator.Instance.setTimeStep(0.25f);
         Simulator.Instance.setAgentDefaults(3.0f, 10, 5.0f, 5.0f, 0.1f, 0.12f, new float2(0.0f, 0.0f));
         
-        limit = Bootstrap.Settings.agentsLimit;
-        newAgents = Bootstrap.Settings.newAgents;
         gridSize = Bootstrap.Settings.gridSize;
     }
 
@@ -60,13 +57,13 @@ public class SpawnAgentSystem : ComponentSystem
     {
         count++;
         
-        if(count < 20 || agents.Length > limit)
+        if(count < 20 || agents.Length > UIManager.limit)
             return;
 
         count = 0;
         Random rnd = new Random((uint)(Time.time*10)+1);
 
-        for (int i = 0; i < newAgents/2; i++)
+        for (int i = 0; i < UIManager.newAgents/2; i++)
         {
             var y = (gridSize.y / 2) - 0.1f;
             var rndY = rnd.NextFloat(-y, y);
@@ -84,7 +81,7 @@ public class SpawnAgentSystem : ComponentSystem
             agents.TryAdd(index, agent);
         }
         
-        for (int i = 0; i < newAgents/2; i++)
+        for (int i = 0; i < UIManager.newAgents/2; i++)
         {
             var x = (gridSize.x / 2) - 0.1f;
             var rndX = rnd.NextFloat(-x, x);

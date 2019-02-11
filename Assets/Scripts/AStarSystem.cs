@@ -1,4 +1,7 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Runtime.CompilerServices;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
@@ -37,7 +40,7 @@ public class AStarSystem : JobComponentSystem
 
         private unsafe void AStarSolver(int2 start, int2 goal, int index, Entity agent)
         {
-            var openSet    = OpenSet.Slice(index * _maxLength, _maxLength);
+            var openSet = OpenSet.Slice(index * _maxLength, _maxLength);
             var closedSet  = ClosedSet.Slice(index * _maxLength, _maxLength);
             var G_Costs    = Gcosts.Slice(index * _maxLength, _maxLength);
             var neighbours = new NativeList<int2>(8, Allocator.TempJob);
@@ -104,6 +107,9 @@ public class AStarSystem : JobComponentSystem
                     }
                 }    
             }
+//            openSet.Dispose();
+//            closedSet.Dispose();
+//            G_Costs .Dispose();
             neighbours.Dispose();
         }
 
@@ -168,6 +174,7 @@ public class AStarSystem : JobComponentSystem
         OpenSet    = new NativeMinHeap(MaxLenght * MaxAgents, Allocator.Persistent);
         ClosedSet  = new NativeArray<MinHeapNode>(MaxLenght * MaxAgents, Allocator.Persistent);
         Gcosts     = new NativeArray<int>(MaxLenght * MaxAgents, Allocator.Persistent);
+        Enabled = false;
     }
 
     protected override void OnDestroyManager()
@@ -179,7 +186,11 @@ public class AStarSystem : JobComponentSystem
 
     protected override JobHandle OnUpdate(JobHandle inputDeps)
     {
-        return new AStarJob
+        Stopwatch sw = new Stopwatch();
+        var batch = UIManager.batch;
+        sw.Start();
+        
+        var job =  new AStarJob
         {
             Walkables = GetComponentDataFromEntity<Walkable>(true),
             OpenSet = OpenSet,
@@ -190,7 +201,33 @@ public class AStarSystem : JobComponentSystem
             Waypoints = GetBufferFromEntity<Waypoints>(),
             gridSize = Bootstrap.Settings.gridSize,
             _maxLength = MaxLenght
-        }.Schedule(_agentGroup.Length, 1, inputDeps);
+        }.Schedule(_agentGroup.Length, batch, inputDeps);
+        job.Complete();
+        
+        sw.Stop();
+        fps.Add(sw.Elapsed.TotalMilliseconds);
+
+        if (fps.Count >= 1000)
+        {
+            saveData();
+            Application.Quit();
+        }
+        return job;
+    }
+    
+    List<double> fps = new List<double>();
+    public void saveData()
+    {
+        
+        string path = $"{Application.persistentDataPath}/msdataECS {UIManager.newAgents}_{UIManager.batch}.txt";
+
+        StreamWriter writer = new StreamWriter(path, true);
+
+        foreach (var pair in fps)
+        {
+            writer.WriteLine($"{pair}");
+        }
+        writer.Close();
     }
 
     private class AStarBarrier : BarrierSystem {}
