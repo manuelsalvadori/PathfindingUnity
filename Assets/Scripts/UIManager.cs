@@ -134,6 +134,7 @@ public class UIManager : MonoBehaviour
     public void startSimulation()
     {
         start = true;
+        startime = Time.time;
         World.Active.GetExistingManager<SpawnAgentSystem>().Enabled = !World.Active.GetExistingManager<SpawnAgentSystem>().Enabled;
     }
 }
