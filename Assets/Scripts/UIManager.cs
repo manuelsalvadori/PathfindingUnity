@@ -13,6 +13,8 @@ public class UIManager : MonoBehaviour
     public Text maxSpeedT;
     private List<KeyValuePair<float,float>> fps;
     private bool start = false;
+    private float startime = 0f;
+    private int currentAgent;
 
     private void Start()
     {
@@ -26,13 +28,21 @@ public class UIManager : MonoBehaviour
     private void Update()
     {
         if(start)
-            fps.Add(new KeyValuePair<float, float>(Time.time, GraphyManager.Instance.CurrentFPS));
+        {
+            var delta = Time.time - startime;
+            fps.Add(new KeyValuePair<float, float>(delta, GraphyManager.Instance.CurrentFPS));
+            if (delta > 12f)
+            {
+                saveData();
+                Application.Quit();
+            }
+        }
         count.text = "Agents count: " + SpawnAgentSystem.agents.Length;
     }
 
     public void saveData()
     {
-        string path = $"{Application.persistentDataPath}/fpsdataECS {SpawnAgentSystem.newAgents}_{SpawnAgentSystem.limit}.txt";
+        string path = $"{Application.persistentDataPath}/fpsdataECS {currentAgent}_{SpawnAgentSystem.limit}.txt";
         
         StreamWriter writer = new StreamWriter(path, true);
 
@@ -49,14 +59,14 @@ public class UIManager : MonoBehaviour
         {
             if (SpawnAgentSystem.limit > SpawnAgentSystem.maxLimit)
                 return;
-            SpawnAgentSystem.limit += 5000;
+            SpawnAgentSystem.limit += 500;
             agentsLimit.text = "Agents limit: " + SpawnAgentSystem.limit;
         }
         else
         {
             if (Bootstrap.Settings.agentsLimit > 19900)
                 return;
-            Bootstrap.Settings.agentsLimit += 5000;
+            Bootstrap.Settings.agentsLimit += 500;
             agentsLimit.text = "Agents limit: " + Bootstrap.Settings.agentsLimit;
         }
     }
@@ -67,14 +77,14 @@ public class UIManager : MonoBehaviour
         {
             if (Bootstrap.Settings.agentsLimit == 0)
                 return;
-            SpawnAgentSystem.limit -= 5000;
+            SpawnAgentSystem.limit -= 500;
             agentsLimit.text = "Agents limit: " + SpawnAgentSystem.limit;
         }
         else
         {
             if (Bootstrap.Settings.agentsLimit == 0)
                 return;
-            Bootstrap.Settings.agentsLimit -= 5000;
+            Bootstrap.Settings.agentsLimit -= 500;
             agentsLimit.text = "Agents limit: " + Bootstrap.Settings.agentsLimit;
         }
     }
@@ -84,11 +94,13 @@ public class UIManager : MonoBehaviour
         if (World.Active.GetExistingManager<SpawnAgentSystem>().Enabled)
         {
             SpawnAgentSystem.newAgents += 100;
+            currentAgent = SpawnAgentSystem.newAgents;
             newAgents.text = "New agents: " + SpawnAgentSystem.newAgents;
         }
         else
         {
             Bootstrap.Settings.newAgents += 100;
+            currentAgent = SpawnAgentSystem.newAgents;
             newAgents.text = "New agents: " + Bootstrap.Settings.newAgents;
         }
     }

@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using Unity.Entities;
 using Unity.Jobs;
 using RVO;
@@ -106,8 +109,13 @@ public class RVOSystem : JobComponentSystem
         maxSpeed = Bootstrap.Settings.maxAgentSpeed;
     }
 
+//    private List<KeyValuePair<float, double>> times = new List<KeyValuePair<float, double>>();
+
     protected override JobHandle OnUpdate(JobHandle inputDeps)
     {
+//        Stopwatch sw = new Stopwatch();
+//        sw.Start();
+        
         var agentsJob = new RVOJob
         {
             Positions = GetComponentDataFromEntity<Position>(),
@@ -133,6 +141,24 @@ public class RVOSystem : JobComponentSystem
         indexes.Dispose();
         
         Simulator.Instance.doTimeStep();
+        
+//        sw.Stop();
+//        times.Add(new KeyValuePair<float, double>(Time.time, sw.Elapsed.TotalMilliseconds));
+//        if(times.Count > 501)
+//            save();
         return updateJob;
     }
+    
+//    void save()
+//    {
+//        string path = $"{Application.persistentDataPath}/rvo2DataECS.txt";
+//        
+//        StreamWriter writer = new StreamWriter(path, true);
+//
+//        foreach (var pair in times)
+//        {
+//            writer.WriteLine($"{pair.Key} {pair.Value}");
+//        }
+//        writer.Close();
+//    }
 }
