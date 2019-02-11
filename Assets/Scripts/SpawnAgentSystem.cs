@@ -39,7 +39,7 @@ public class SpawnAgentSystem : ComponentSystem
         agentArchetype = em.CreateArchetype
         (
             typeof(Position),
-            typeof(MeshInstanceRenderer),
+            //typeof(MeshInstanceRenderer),
             typeof(Agent),
             typeof(Target),
             typeof(Waypoints)
@@ -55,12 +55,12 @@ public class SpawnAgentSystem : ComponentSystem
 
     protected override void OnUpdate()
     {
-        count++;
-        
-        if(count < 20 || agents.Length > UIManager.limit)
-            return;
-
-        count = 0;
+//        count++;
+//        
+//        if(count < 20 || agents.Length > UIManager.limit)
+//            return;
+//
+//        count = 0;
         Random rnd = new Random((uint)(Time.time*10)+1);
 
         for (int i = 0; i < UIManager.newAgents/2; i++)
@@ -70,7 +70,7 @@ public class SpawnAgentSystem : ComponentSystem
             var rndY2 = rnd.NextFloat(-y, y);
             
             var agent = em.CreateEntity(agentArchetype);
-            em.SetSharedComponentData(agent, Bootstrap.agentLook);
+            //em.SetSharedComponentData(agent, Bootstrap.agentLook);
             
             var pos = new Position {Value = new float3(-y, 0, rndY)};
 
@@ -88,7 +88,7 @@ public class SpawnAgentSystem : ComponentSystem
             var rndX2 = rnd.NextFloat(-x, x);
             
             var agent = em.CreateEntity(agentArchetype);
-            em.SetSharedComponentData(agent, Bootstrap.agentLook);
+            //em.SetSharedComponentData(agent, Bootstrap.agentLook);
             
             var pos = new Position {Value = new float3(rndX, 1, -x)};
 

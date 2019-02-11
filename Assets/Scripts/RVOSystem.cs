@@ -101,6 +101,7 @@ public class RVOSystem : JobComponentSystem
     {
         base.OnStartRunning();
         maxSpeed = Bootstrap.Settings.maxAgentSpeed;
+        Enabled = false;
     }
 
     protected override JobHandle OnUpdate(JobHandle inputDeps)
