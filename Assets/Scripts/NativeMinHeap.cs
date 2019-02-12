@@ -44,7 +44,7 @@ public unsafe struct NativeMinHeap : IDisposable
  
         if (size > int.MaxValue)
         {
-            throw new ArgumentOutOfRangeException(nameof(capacity), $"Length * sizeof(T) cannot exceed {int.MaxValue} bytes");
+            throw new ArgumentOutOfRangeException(nameof(capacity), $"Length * sizeof(MinHeapNode) cannot exceed {int.MaxValue} bytes");
         }
  
         buffer = UnsafeUtility.Malloc(size, UnsafeUtility.AlignOf<MinHeapNode>(), allocator);
@@ -69,7 +69,7 @@ public unsafe struct NativeMinHeap : IDisposable
             length = 0,
             head = -1,
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-            m_Safety = this.m_Safety,
+            m_Safety = m_Safety,
 #endif
         };
     }
@@ -117,19 +117,19 @@ public unsafe struct NativeMinHeap : IDisposable
             }
  
             node.Next = current.Next;
-            current.Next = this.length;
+            current.Next = length;
  
-            UnsafeUtility.WriteArrayElement(this.buffer, currentPtr, current);
+            UnsafeUtility.WriteArrayElement(buffer, currentPtr, current);
         }
  
-        UnsafeUtility.WriteArrayElement(this.buffer, this.length, node);
+        UnsafeUtility.WriteArrayElement(buffer, length, node);
         this.length += 1;
     }
  
     public MinHeapNode Pop()
     {
         #if ENABLE_UNITY_COLLECTIONS_CHECKS
-            AtomicSafetyHandle.CheckWriteAndThrow(this.m_Safety);
+            AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
         #endif
         
         var result = head;
@@ -165,7 +165,7 @@ public unsafe struct NativeMinHeap : IDisposable
             if (current.NodeEntity == node)
             {
                 prev.Next = current.Next;
-                UnsafeUtility.WriteArrayElement(this.buffer, currentPrev, prev);
+                UnsafeUtility.WriteArrayElement(buffer, currentPrev, prev);
                 return true;
             }
 
@@ -177,7 +177,7 @@ public unsafe struct NativeMinHeap : IDisposable
         if (current.NodeEntity == node)
         {
             prev.Next = -1;
-            UnsafeUtility.WriteArrayElement(this.buffer, currentPrev, prev);
+            UnsafeUtility.WriteArrayElement(buffer, currentPrev, prev);
             return true;
         }
         return false;
@@ -210,42 +210,42 @@ public unsafe struct NativeMinHeap : IDisposable
 
     public void Clear()
     {
-        this.head = -1;
-        this.length = 0;
+        head = -1;
+        length = 0;
     }
  
     public void Dispose()
     {
-        if (!UnsafeUtility.IsValidAllocator(this.allocator))
+        if (!UnsafeUtility.IsValidAllocator(allocator))
         {
             return;
         }
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
-        DisposeSentinel.Dispose(ref this.m_Safety, ref this.m_DisposeSentinel);
+        DisposeSentinel.Dispose(ref m_Safety, ref m_DisposeSentinel);
 #endif
-        UnsafeUtility.Free(this.buffer, this.allocator);
-        this.buffer = null;
-        this.capacity = 0;
+        UnsafeUtility.Free(buffer, allocator);
+        buffer = null;
+        capacity = 0;
     }
  
     private MinHeapNode Get(int index)
     {
         #if ENABLE_UNITY_COLLECTIONS_CHECKS
-        if (index < 0 || index >= this.length)
+        if (index < 0 || index >= length)
         {
             this.OutOfRangeError(index);
         }
  
-        AtomicSafetyHandle.CheckReadAndThrow(this.m_Safety);
+        AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
         #endif
  
-        return UnsafeUtility.ReadArrayElement<MinHeapNode>(this.buffer, index);
+        return UnsafeUtility.ReadArrayElement<MinHeapNode>(buffer, index);
     }
  
 #if ENABLE_UNITY_COLLECTIONS_CHECKS
     private void OutOfRangeError(int index)
     {
-        throw new IndexOutOfRangeException($"Index {index} is out of range of '{this.capacity}' range.");
+        throw new IndexOutOfRangeException($"Index {index} is out of range of '{capacity}' range.");
     }
 #endif
 }

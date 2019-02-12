@@ -1,5 +1,4 @@
-﻿using System;
-using Unity.Entities;
+﻿using Unity.Entities;
 using Unity.Jobs;
 using RVO;
 using Unity.Collections;
@@ -94,14 +93,12 @@ public class RVOSystem : JobComponentSystem
         }
     }
 
-    //[Inject] private ComponentDataFromEntity<Position> _positions;
     public static int maxSpeed = 70;
 
     protected override void OnStartRunning()
     {
         base.OnStartRunning();
         maxSpeed = Bootstrap.Settings.maxAgentSpeed;
-        Enabled = false;
     }
 
     protected override JobHandle OnUpdate(JobHandle inputDeps)

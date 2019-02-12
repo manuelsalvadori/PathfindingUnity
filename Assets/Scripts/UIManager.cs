@@ -11,9 +11,7 @@ public class UIManager : MonoBehaviour
     public Text batchT;
 
     public static int batch = 1;
-    public static float startime = 0f;
     
-    public static int maxLimit = 14900;
     public static int limit;
     public static int newAgents;
 
@@ -84,7 +82,6 @@ public class UIManager : MonoBehaviour
     
     public void startSim()
     {
-        startime = Time.time;
         World.Active.GetExistingManager<SpawnAgentSystem>().Enabled = true;
         World.Active.GetExistingManager<AStarSystem>().Enabled = true;
     }
