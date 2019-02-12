@@ -95,7 +95,6 @@ public class RVOSystem : JobComponentSystem
         }
     }
 
-    //[Inject] private ComponentDataFromEntity<Position> _positions;
     public static int maxSpeed = 70;
     
     protected override void OnCreateManager()
@@ -109,13 +108,8 @@ public class RVOSystem : JobComponentSystem
         maxSpeed = Bootstrap.Settings.maxAgentSpeed;
     }
 
-//    private List<KeyValuePair<float, double>> times = new List<KeyValuePair<float, double>>();
-
     protected override JobHandle OnUpdate(JobHandle inputDeps)
     {
-//        Stopwatch sw = new Stopwatch();
-//        sw.Start();
-        
         var agentsJob = new RVOJob
         {
             Positions = GetComponentDataFromEntity<Position>(),
@@ -142,23 +136,6 @@ public class RVOSystem : JobComponentSystem
         
         Simulator.Instance.doTimeStep();
         
-//        sw.Stop();
-//        times.Add(new KeyValuePair<float, double>(Time.time, sw.Elapsed.TotalMilliseconds));
-//        if(times.Count > 501)
-//            save();
         return updateJob;
     }
-    
-//    void save()
-//    {
-//        string path = $"{Application.persistentDataPath}/rvo2DataECS.txt";
-//        
-//        StreamWriter writer = new StreamWriter(path, true);
-//
-//        foreach (var pair in times)
-//        {
-//            writer.WriteLine($"{pair.Key} {pair.Value}");
-//        }
-//        writer.Close();
-//    }
 }

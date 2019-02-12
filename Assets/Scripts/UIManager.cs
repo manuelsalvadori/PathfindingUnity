@@ -11,10 +11,6 @@ public class UIManager : MonoBehaviour
     public Text newAgents;
     public Text count;
     public Text maxSpeedT;
-    private List<KeyValuePair<float,float>> fps;
-    private bool start = false;
-    private float startime = 0f;
-    private int currentAgent;
 
     private void Start()
     {
@@ -22,35 +18,11 @@ public class UIManager : MonoBehaviour
         agentsLimit.text = "Agents limit: " + settings.agentsLimit;
         newAgents.text = "New agents: " + settings.newAgents;
         maxSpeedT.text = "Max speed: " + settings.maxAgentSpeed;
-        fps = new List<KeyValuePair<float, float>>();
     }
 
     private void Update()
     {
-        if(start)
-        {
-            var delta = Time.time - startime;
-            fps.Add(new KeyValuePair<float, float>(delta, GraphyManager.Instance.CurrentFPS));
-            if (delta > 12f)
-            {
-                saveData();
-                Application.Quit();
-            }
-        }
         count.text = "Agents count: " + SpawnAgentSystem.agents.Length;
-    }
-
-    public void saveData()
-    {
-        string path = $"{Application.persistentDataPath}/fpsdataECS {currentAgent}_{SpawnAgentSystem.limit}.txt";
-        
-        StreamWriter writer = new StreamWriter(path, true);
-
-        foreach (var pair in fps)
-        {
-            writer.WriteLine($"{pair.Key} {pair.Value}");
-        }
-        writer.Close();
     }
 
     public void incrementLimit()
@@ -94,13 +66,11 @@ public class UIManager : MonoBehaviour
         if (World.Active.GetExistingManager<SpawnAgentSystem>().Enabled)
         {
             SpawnAgentSystem.newAgents += 100;
-            currentAgent = SpawnAgentSystem.newAgents;
             newAgents.text = "New agents: " + SpawnAgentSystem.newAgents;
         }
         else
         {
             Bootstrap.Settings.newAgents += 100;
-            currentAgent = SpawnAgentSystem.newAgents;
             newAgents.text = "New agents: " + Bootstrap.Settings.newAgents;
         }
     }
@@ -133,8 +103,6 @@ public class UIManager : MonoBehaviour
 
     public void startSimulation()
     {
-        start = true;
-        startime = Time.time;
         World.Active.GetExistingManager<SpawnAgentSystem>().Enabled = !World.Active.GetExistingManager<SpawnAgentSystem>().Enabled;
     }
 }

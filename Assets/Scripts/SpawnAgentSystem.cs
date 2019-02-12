@@ -1,15 +1,9 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using RVO;
+﻿using RVO;
 using Unity.Collections;
 using Unity.Entities;
-using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Rendering;
 using Unity.Transforms;
-using UnityEngine;
-using Random = Unity.Mathematics.Random;
 
 public class SpawnAgentSystem : ComponentSystem
 {
@@ -36,7 +30,7 @@ public class SpawnAgentSystem : ComponentSystem
         agentArchetype = em.CreateArchetype
         (
             typeof(Position),
-            //typeof(MeshInstanceRenderer),
+            typeof(MeshInstanceRenderer),
             typeof(Agent),
             typeof(Target),
             typeof(ToProcess),
@@ -72,7 +66,7 @@ public class SpawnAgentSystem : ComponentSystem
         for (int i = 0; i < newAgents; i++)
         {            
             var agent = em.CreateEntity(agentArchetype);
-            //em.SetSharedComponentData(agent, Bootstrap.agentLook);
+            em.SetSharedComponentData(agent, Bootstrap.agentLook);
             
             var pos = new Position {Value = new float3(currentx, 0, currenty)};
             var tar = new Target {Value = new float3(-currentx, 0, -currenty)};

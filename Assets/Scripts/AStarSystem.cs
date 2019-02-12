@@ -107,9 +107,6 @@ public class AStarSystem : JobComponentSystem
                     }
                 }    
             }
-//            openSet.Dispose();
-//            closedSet .Dispose();
-//            G_Costs.Dispose();   
             neighbours.Dispose();
         }
 
@@ -159,14 +156,12 @@ public class AStarSystem : JobComponentSystem
         }
     }
 
-//    private List<KeyValuePair<float, double>> times = new List<KeyValuePair<float, double>>();
     private NativeMinHeap OpenSet;
     private NativeArray<MinHeapNode> ClosedSet;
     private NativeArray<int> Gcosts;
     private int MaxLenght;
     private int MaxAgents;
     
-
     protected override void OnCreateManager()
     {
         MaxLenght = 2500;
@@ -186,10 +181,7 @@ public class AStarSystem : JobComponentSystem
 
     protected override JobHandle OnUpdate(JobHandle inputDeps)
     {
-//        Stopwatch sw = new Stopwatch();
-//        sw.Start();
-        
-        var job = new AStarJob
+        return new AStarJob
         {
             Walkables = GetComponentDataFromEntity<Walkable>(true),
             OpenSet = OpenSet,
@@ -201,25 +193,7 @@ public class AStarSystem : JobComponentSystem
             gridSize = Bootstrap.Settings.gridSize,
             _maxLength = MaxLenght
         }.Schedule(_agentGroup.Length, 1, inputDeps);
-//        job.Complete();
-        
-//        sw.Stop();
-//        times.Add(new KeyValuePair<float, double>(Time.time, sw.Elapsed.TotalMilliseconds));
-        return job;
     }
-
-//    protected override void OnDestroyManager()
-//    {
-//        string path = $"{Application.persistentDataPath}/aStarDataECS.txt";
-//        
-//        StreamWriter writer = new StreamWriter(path, true);
-//
-//        foreach (var pair in times)
-//        {
-//            writer.WriteLine($"{pair.Key} {pair.Value}");
-//        }
-//        writer.Close();
-//    }
 
     private class AStarBarrier : BarrierSystem {}
     [Inject] private AStarBarrier _aStarBarrier;
