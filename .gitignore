@@ -31,11 +31,6 @@ sysinfo.txt
 /*.svd
 
 /Assets/CodeSamples/*.*
-/*.meta
-*.meta
-*.cs.meta
-/*.cs.meta
-*.pidb.meta
 .idea
  
 # ============ #

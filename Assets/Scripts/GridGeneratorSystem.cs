@@ -41,17 +41,11 @@ public class GridGeneratorSystem : JobComponentSystem
                 
                 node = entityManager.CreateEntity(Bootstrap._nodeArchetype);
                 entityManager.SetComponentData(node, new Position { Value = new float3(xPos, 0, yPos) });
-                
-                if (Physics.CheckBox(new Vector3(xPos, 0, yPos), Vector3.one * (nodeSize / 2f)))
+                entityManager.AddComponentData(node, new Walkable
                 {
-                    entityManager.AddComponentData(node, new Walkable { Value = false});
-                    //entityManager.SetSharedComponentData(node, unwalkableLook);
-                }
-                else
-                {
-                    entityManager.AddComponentData(node, new Walkable { Value = true});
-                    //entityManager.SetSharedComponentData(node, nodeLook);
-                }
+                    Value = !Physics.CheckBox(new Vector3(xPos, 0, yPos), Vector3.one * (nodeSize / 2f))
+                });
+
                 grid[x, y] = node;                
             }
         }
